@@ -3,282 +3,278 @@
 <head>
 <meta charset="UTF-8">
 <title>Kazı Oyunu</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-body{
- margin:0;
- background:#6b4f2a;
- color:white;
- font-family:Arial;
- overflow:hidden;
-}
-canvas{
- background:#8b6a3e;
- display:none;
- margin:auto;
-}
-#menu{
- position:fixed; inset:0;
- display:flex; flex-direction:column;
- justify-content:center; align-items:center;
-}
-button{
- font-size:18px;
- padding:12px 26px;
- margin:10px;
- border:none;
- border-radius:10px;
-}
-#mobileControls{
- position:fixed;
- bottom:20px;
- left:50%;
- transform:translateX(-50%);
- display:none;
- gap:10px;
-}
-.ctrl{
- width:60px; height:60px;
- border-radius:50%;
- background:#444;
- color:white;
- font-size:22px;
-}
-#kazBtn{
- position:fixed;
- bottom:120px;
- left:50%;
- transform:translateX(-50%);
- padding:14px 36px;
- font-size:20px;
- display:none;
-}
-#museumBtn{
- position:fixed;
- top:20px;
- right:20px;
- padding:10px 16px;
-}
+html,body{margin:0;padding:0;overflow:hidden;background:#4a2f16;color:#fff;font-family:Arial}
+canvas{display:block;background:#6b4a2b}
+#topUI{position:fixed;top:10px;left:10px;z-index:5}
+#topUI button{padding:8px 12px;margin-right:6px;font-size:14px}
+#mobileControls{position:fixed;bottom:20px;left:0;right:0;display:none;z-index:5;text-align:center}
+#mobileControls button{padding:14px 16px;margin:6px;font-size:18px}
+#digBtn{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);display:none;z-index:6}
 </style>
 </head>
 <body>
 
-<!-- MENÜ -->
-<div id="menu">
- <h1>Kazı Oyunu</h1>
- <p>Platform seç</p>
- <button onclick="start('pc')">💻 PC</button>
- <button onclick="start('mobile')">📱 Mobil</button>
+<canvas id="game"></canvas>
+
+<div id="topUI">
+  <button onclick="openMuseum()">🏛️ Müze</button>
+  <button onclick="openShop()">🛒 Mağaza</button>
 </div>
 
-<canvas id="game" width="400" height="600"></canvas>
+<button id="digBtn" onclick="digAttempt()">⛏️ Kaz</button>
 
-<!-- MOBİL KONTROLLER -->
 <div id="mobileControls">
- <button class="ctrl" ontouchstart="keys.up=true" ontouchend="keys.up=false">⬆️</button>
- <div style="display:flex;gap:10px">
-  <button class="ctrl" ontouchstart="keys.left=true" ontouchend="keys.left=false">⬅️</button>
-  <button class="ctrl" ontouchstart="keys.right=true" ontouchend="keys.right=false">➡️</button>
- </div>
- <button class="ctrl" ontouchstart="keys.down=true" ontouchend="keys.down=false">⬇️</button>
+  <button ontouchstart="move.left=true" ontouchend="move.left=false">⬅️</button>
+  <button ontouchstart="move.right=true" ontouchend="move.right=false">➡️</button>
+  <button ontouchstart="move.up=true" ontouchend="move.up=false">⬆️</button>
+  <button ontouchstart="move.down=true" ontouchend="move.down=false">⬇️</button>
 </div>
-
-<button id="kazBtn">⛏️ KAZ</button>
-<button id="museumBtn">🏛️ Müze</button>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const kazBtn = document.getElementById("kazBtn");
-const museumBtn = document.getElementById("museumBtn");
-
-const tile = 40;
-const cols = 10;
-const rows = 300;
-
-let cameraY = 0;
-let gameState = "play";
-let activeArtifact = null;
-let showMuseum = false;
-
-// Oyuncu
-const player = { x:200, y:100, spd:4 };
-
-// Kontroller
-const keys = {up:false,down:false,left:false,right:false};
-onkeydown=e=>{
- if(e.key==="ArrowUp")keys.up=true;
- if(e.key==="ArrowDown")keys.down=true;
- if(e.key==="ArrowLeft")keys.left=true;
- if(e.key==="ArrowRight")keys.right=true;
-};
-onkeyup=e=>{
- if(e.key==="ArrowUp")keys.up=false;
- if(e.key==="ArrowDown")keys.down=false;
- if(e.key==="ArrowLeft")keys.left=false;
- if(e.key==="ArrowRight")keys.right=false;
-};
-
-// Toprak
-const soil=[];
-for(let y=0;y<rows;y++){
- soil[y]=[];
- for(let x=0;x<cols;x++) soil[y][x]=true;
+/* =================== AYAR & CANVAS =================== */
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+function resize(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
 }
+window.addEventListener("resize",resize);
+resize();
 
-// Eserler
-const artifacts=[
- {x:160,y:500,damage:0},
- {x:240,y:900,damage:0},
- {x:80,y:1400,damage:0}
-];
+/* =================== OYUN DURUMLARI =================== */
+let gameState="select"; // select, play, dig, museum, shop
+let controlType="pc";
 
-// Müze
+/* =================== HAREKET =================== */
+const move={left:false,right:false,up:false,down:false};
+
+/* =================== OYUNCU =================== */
+const player={x:200,y:100,size:32,speed:4};
+
+/* =================== KAMERA =================== */
+let cameraY=0;
+
+/* =================== EKONOMİ =================== */
+let money=0;
+let rarityBonus=0;
+let sellBonus=0;
+let digPrecision=0;
+
+/* =================== MÜZE =================== */
 const museum=[];
 
-// Nadirlik
-function getRarity(y){
- if(y<600) return {name:"Sıradan",color:"blue"};
- if(y<1200) return {name:"Epic",color:"purple"};
- return {name:"Efsanevi",color:"gold"};
-}
+/* =================== MAĞAZA =================== */
+const shopItems=[
+ {name:"+%5 Nadirlik",cost:50,buy:()=>rarityBonus+=5},
+ {name:"Kazı Hassasiyeti",cost:40,buy:()=>digPrecision+=15},
+ {name:"Satış +10 $A",cost:60,buy:()=>sellBonus+=10}
+];
 
-// Katman rengi
-function soilColor(y){
- if(y<400) return "#c2a36b";
- if(y<900) return "#8b6a3e";
- if(y<1500) return "#5a3d1e";
- return "#3a2a18";
-}
+/* =================== ESERLER =================== */
+const artifacts=[
+ {x:120,y:500,rarity:null,done:false},
+ {x:260,y:900,rarity:null,done:false},
+ {x:180,y:1400,rarity:null,done:false}
+];
 
-// Kaz
-function dig(){
- const gx=Math.floor(player.x/tile);
- const gy=Math.floor(player.y/tile);
- if(soil[gy] && soil[gy][gx]) soil[gy][gx]=false;
-}
-
-// Tutturma barı
-let barPos=0, barDir=1;
-
-kazBtn.onclick=()=>{
- let success=true;
- if(barPos<120||barPos>280){
-  activeArtifact.damage=2;
-  success=false;
+function rollRarity(y){
+ let r=Math.random()*100 + rarityBonus;
+ if(y<600) return r<80?{n:"Sıradan",c:"blue",v:10}:{n:"Epic",c:"purple",v:30};
+ if(y<1200){
+  if(r<60) return {n:"Epic",c:"purple",v:30};
+  if(r<90) return {n:"Sıradan",c:"blue",v:10};
+  return {n:"Efsanevi",c:"gold",v:100};
  }
- if(success){
-  const r=getRarity(activeArtifact.y);
-  museum.push(r);
- }
- kazBtn.style.display="none";
- gameState="play";
-};
+ return r<70?{n:"Epic",c:"purple",v:30}:{n:"Efsanevi",c:"gold",v:100};
+}
+artifacts.forEach(a=>a.rarity=rollRarity(a.y));
 
-museumBtn.onclick=()=>{
- showMuseum=!showMuseum;
- gameState=showMuseum?"museum":"play";
-};
+/* =================== KAZI MINI GAME =================== */
+let activeArtifact=null;
+let barPos=200,barDir=1;
+let digTries=0;
 
-// Başlat
-function start(p){
- document.getElementById("menu").style.display="none";
- canvas.style.display="block";
- if(p==="mobile")
-  document.getElementById("mobileControls").style.display="flex";
- loop();
+function startDig(a){
+ activeArtifact=a;
+ gameState="dig";
+ digTries=0;
+ document.getElementById("digBtn").style.display="block";
 }
 
-function update(){
- if(gameState==="play"){
-  if(keys.up)player.y-=player.spd;
-  if(keys.down)player.y+=player.spd;
-  if(keys.left)player.x-=player.spd;
-  if(keys.right)player.x+=player.spd;
-
-  dig();
-  cameraY = player.y - canvas.height/2 + tile/2;
-
-  artifacts.forEach(a=>{
-   if(
-    player.x<a.x+tile &&
-    player.x+tile>a.x &&
-    player.y<a.y+tile &&
-    player.y+tile>a.y &&
-    a.damage===0
-   ){
-    gameState="kaz";
-    activeArtifact=a;
-    kazBtn.style.display="block";
-   }
-  });
- }
-
- if(gameState==="kaz"){
-  barPos+=4*barDir;
-  if(barPos>300||barPos<0)barDir*=-1;
- }
+function getZone(pos){
+ const gStart=180-digPrecision/2, gEnd=220+digPrecision/2;
+ const yStart=140, yEnd=260;
+ if(pos>gStart && pos<gEnd) return "green";
+ if(pos>yStart && pos<yEnd) return "yellow";
+ return "red";
 }
 
-function drawSoil(){
- for(let y=0;y<rows;y++){
-  for(let x=0;x<cols;x++){
-   if(soil[y][x]){
-    ctx.fillStyle=soilColor(y*tile);
-    ctx.fillRect(x*tile,y*tile-cameraY,tile,tile);
-   }
+function digAttempt(){
+ const zone=getZone(barPos);
+ if(zone==="green"){
+  collectArtifact();
+  closeDig();
+ }else if(zone==="yellow"){
+  digTries++;
+  if(digTries>=2){
+   breakArtifact();
+   closeDig();
   }
+ }else{
+  breakArtifact();
+  closeDig();
  }
 }
 
+function collectArtifact(){
+ museum.push(activeArtifact.rarity);
+ money += activeArtifact.rarity.v + sellBonus;
+ activeArtifact.done=true;
+}
+
+function breakArtifact(){
+ activeArtifact.done=true;
+}
+
+function closeDig(){
+ gameState="play";
+ activeArtifact=null;
+ document.getElementById("digBtn").style.display="none";
+}
+
+/* =================== KONTROLLER =================== */
+// PC
+document.addEventListener("keydown",e=>{
+ if(controlType!=="pc")return;
+ if(e.key==="ArrowLeft")move.left=true;
+ if(e.key==="ArrowRight")move.right=true;
+ if(e.key==="ArrowUp")move.up=true;
+ if(e.key==="ArrowDown")move.down=true;
+ if(e.key===" " && gameState==="dig")digAttempt();
+});
+document.addEventListener("keyup",e=>{
+ if(controlType!=="pc")return;
+ if(e.key==="ArrowLeft")move.left=false;
+ if(e.key==="ArrowRight")move.right=false;
+ if(e.key==="ArrowUp")move.up=false;
+ if(e.key==="ArrowDown")move.down=false;
+});
+
+/* =================== UI =================== */
+function openMuseum(){gameState="museum"}
+function openShop(){gameState="shop"}
+
+/* =================== UPDATE =================== */
+function update(){
+ if(gameState!=="play")return;
+ if(move.left)player.x-=player.speed;
+ if(move.right)player.x+=player.speed;
+ if(move.up)player.y-=player.speed;
+ if(move.down)player.y+=player.speed;
+ cameraY=player.y-canvas.height/2;
+}
+
+/* =================== DRAW =================== */
 function draw(){
  ctx.clearRect(0,0,canvas.width,canvas.height);
- drawSoil();
 
- // eserler
- artifacts.forEach(a=>{
-  const r=getRarity(a.y);
-  ctx.fillStyle=r.color;
-  ctx.fillRect(a.x,a.y-cameraY,tile,tile);
- });
+ if(gameState==="select"){
+  ctx.fillStyle="#fff";
+  ctx.font="24px Arial";
+  ctx.fillText("Platform Seç",canvas.width/2-80,canvas.height/2-40);
+  ctx.fillText("PC için tıkla",canvas.width/2-90,canvas.height/2+10);
+  ctx.fillText("Mobil için çift tık",canvas.width/2-120,canvas.height/2+60);
+  return;
+ }
 
  // oyuncu
  ctx.fillStyle="blue";
- ctx.fillRect(player.x,player.y-cameraY,tile,tile);
+ ctx.fillRect(player.x,player.y-cameraY,player.size,player.size);
 
- // kaz barı
- if(gameState==="kaz"){
-  ctx.fillStyle="red";ctx.fillRect(50,250,300,20);
-  ctx.fillStyle="yellow";ctx.fillRect(100,250,200,20);
-  ctx.fillStyle="green";ctx.fillRect(170,250,60,20);
-  ctx.fillStyle="white";ctx.fillRect(50+barPos,245,5,30);
+ // eserler
+ artifacts.forEach(a=>{
+  if(a.done) return;
+  ctx.fillStyle=a.rarity.c;
+  ctx.fillRect(a.x,a.y-cameraY,30,30);
+  if(gameState==="play" && Math.abs(player.x-a.x)<30 && Math.abs(player.y-a.y)<30){
+    startDig(a);
+  }
+ });
+
+ // para
+ ctx.fillStyle="#fff";
+ ctx.font="16px Arial";
+ ctx.fillText("💰 "+money+" $A",20,30);
+
+ // kazı mini-game
+ if(gameState==="dig"){
+  barPos+=barDir*4;
+  if(barPos>300||barPos<100)barDir*=-1;
+
+  ctx.fillStyle="#222";
+  ctx.fillRect(canvas.width/2-150,canvas.height/2-10,300,20);
+
+  ctx.fillStyle="red";
+  ctx.fillRect(canvas.width/2-150,canvas.height/2-10,60,20);
+  ctx.fillRect(canvas.width/2+90,canvas.height/2-10,60,20);
+
+  ctx.fillStyle="yellow";
+  ctx.fillRect(canvas.width/2-90,canvas.height/2-10,180,20);
+
+  ctx.fillStyle="green";
+  ctx.fillRect(canvas.width/2-40-digPrecision/2,canvas.height/2-10,80+digPrecision,20);
+
+  ctx.fillStyle="#fff";
+  ctx.fillRect(canvas.width/2-150+barPos-100,canvas.height/2-15,4,30);
  }
 
  // müze
- if(showMuseum){
-  ctx.fillStyle="rgba(0,0,0,0.85)";
-  ctx.fillRect(0,0,400,600);
-  ctx.fillStyle="white";
-  ctx.font="24px Arial";
-  ctx.fillText("🏛️ MÜZE",130,50);
-  ctx.font="18px Arial";
-  if(museum.length===0){
-   ctx.fillText("Henüz eser yok",110,100);
-  }else{
-   museum.forEach((e,i)=>{
-    ctx.fillStyle=e.color;
-    ctx.fillText((i+1)+". "+e.name+" eser",80,100+i*30);
-   });
-  }
+ if(gameState==="museum"){
+  ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#fff";ctx.fillText("🏛️ Müze",canvas.width/2-40,40);
+  museum.forEach((e,i)=>{
+   ctx.fillStyle=e.c;
+   ctx.fillText(e.n+" ("+e.v+"$)",80,80+i*30);
+  });
+ }
+
+ // mağaza
+ if(gameState==="shop"){
+  ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#fff";ctx.fillText("🛒 Mağaza",canvas.width/2-50,40);
+  shopItems.forEach((s,i)=>{
+   ctx.fillText(s.name+" - "+s.cost+"$A",60,100+i*40);
+  });
  }
 }
+
+/* =================== GİRİŞ =================== */
+canvas.addEventListener("click",()=>{
+ if(gameState==="select"){
+  controlType="pc"; gameState="play";
+ }
+ else if(gameState==="shop"){
+  shopItems.forEach(s=>{
+   if(money>=s.cost){money-=s.cost; s.buy();}
+  });
+ }
+});
+canvas.addEventListener("dblclick",()=>{
+ if(gameState==="select"){
+  controlType="mobile";
+  document.getElementById("mobileControls").style.display="block";
+  gameState="play";
+ }
+});
 
 function loop(){
  update();
  draw();
  requestAnimationFrame(loop);
 }
+loop();
 </script>
-
 </body>
 </html>
