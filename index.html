@@ -5,34 +5,59 @@
 <title>Kazı Oyunu</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{margin:0;background:#111;color:white;font-family:Arial;overflow:hidden}
-canvas{background:#222;display:none;margin:auto}
+body{
+ margin:0;
+ background:#6b4f2a;
+ color:white;
+ font-family:Arial;
+ overflow:hidden;
+}
+canvas{
+ background:#8b6a3e;
+ display:none;
+ margin:auto;
+}
 #menu{
- position:fixed;inset:0;
- display:flex;flex-direction:column;
- justify-content:center;align-items:center;
+ position:fixed; inset:0;
+ display:flex; flex-direction:column;
+ justify-content:center; align-items:center;
 }
 button{
- font-size:20px;padding:14px 30px;
- margin:10px;border:none;border-radius:10px;
+ font-size:18px;
+ padding:12px 26px;
+ margin:10px;
+ border:none;
+ border-radius:10px;
 }
 #mobileControls{
- position:fixed;bottom:20px;left:50%;
+ position:fixed;
+ bottom:20px;
+ left:50%;
  transform:translateX(-50%);
- display:none;gap:10px;
+ display:none;
+ gap:10px;
 }
 .ctrl{
- width:60px;height:60px;
+ width:60px; height:60px;
  border-radius:50%;
- background:#444;color:white;
+ background:#444;
+ color:white;
  font-size:22px;
 }
 #kazBtn{
- position:fixed;bottom:120px;left:50%;
+ position:fixed;
+ bottom:120px;
+ left:50%;
  transform:translateX(-50%);
- padding:15px 40px;
+ padding:14px 36px;
  font-size:20px;
  display:none;
+}
+#museumBtn{
+ position:fixed;
+ top:20px;
+ right:20px;
+ padding:10px 16px;
 }
 </style>
 </head>
@@ -48,48 +73,39 @@ button{
 
 <canvas id="game" width="400" height="600"></canvas>
 
-<!-- MOBİL OK TUŞLARI -->
+<!-- MOBİL KONTROLLER -->
 <div id="mobileControls">
- <button class="ctrl"
-  ontouchstart="keys.up=true"
-  ontouchend="keys.up=false">⬆️</button>
+ <button class="ctrl" ontouchstart="keys.up=true" ontouchend="keys.up=false">⬆️</button>
  <div style="display:flex;gap:10px">
-  <button class="ctrl"
-   ontouchstart="keys.left=true"
-   ontouchend="keys.left=false">⬅️</button>
-  <button class="ctrl"
-   ontouchstart="keys.right=true"
-   ontouchend="keys.right=false">➡️</button>
+  <button class="ctrl" ontouchstart="keys.left=true" ontouchend="keys.left=false">⬅️</button>
+  <button class="ctrl" ontouchstart="keys.right=true" ontouchend="keys.right=false">➡️</button>
  </div>
- <button class="ctrl"
-  ontouchstart="keys.down=true"
-  ontouchend="keys.down=false">⬇️</button>
+ <button class="ctrl" ontouchstart="keys.down=true" ontouchend="keys.down=false">⬇️</button>
 </div>
 
 <button id="kazBtn">⛏️ KAZ</button>
+<button id="museumBtn">🏛️ Müze</button>
 
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-const kazBtn=document.getElementById("kazBtn");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const kazBtn = document.getElementById("kazBtn");
+const museumBtn = document.getElementById("museumBtn");
 
-let platform="pc";
-let cameraY=0;
-let gameState="play";
-let activeArtifact=null;
+const tile = 40;
+const cols = 10;
+const rows = 300;
 
-const tile=40;
+let cameraY = 0;
+let gameState = "play";
+let activeArtifact = null;
+let showMuseum = false;
 
 // Oyuncu
-const player={x:180,y:100,s:40,spd:4};
+const player = { x:200, y:100, spd:4 };
 
-// Eser
-const artifacts=[
- {x:160,y:350,damage:0}
-];
-
-// Kontroller (basılı tut → seri)
-const keys={up:false,down:false,left:false,right:false};
+// Kontroller
+const keys = {up:false,down:false,left:false,right:false};
 onkeydown=e=>{
  if(e.key==="ArrowUp")keys.up=true;
  if(e.key==="ArrowDown")keys.down=true;
@@ -103,29 +119,73 @@ onkeyup=e=>{
  if(e.key==="ArrowRight")keys.right=false;
 };
 
+// Toprak
+const soil=[];
+for(let y=0;y<rows;y++){
+ soil[y]=[];
+ for(let x=0;x<cols;x++) soil[y][x]=true;
+}
+
+// Eserler
+const artifacts=[
+ {x:160,y:500,damage:0},
+ {x:240,y:900,damage:0},
+ {x:80,y:1400,damage:0}
+];
+
+// Müze
+const museum=[];
+
+// Nadirlik
+function getRarity(y){
+ if(y<600) return {name:"Sıradan",color:"blue"};
+ if(y<1200) return {name:"Epic",color:"purple"};
+ return {name:"Efsanevi",color:"gold"};
+}
+
+// Katman rengi
+function soilColor(y){
+ if(y<400) return "#c2a36b";
+ if(y<900) return "#8b6a3e";
+ if(y<1500) return "#5a3d1e";
+ return "#3a2a18";
+}
+
+// Kaz
+function dig(){
+ const gx=Math.floor(player.x/tile);
+ const gy=Math.floor(player.y/tile);
+ if(soil[gy] && soil[gy][gx]) soil[gy][gx]=false;
+}
+
 // Tutturma barı
-let barPos=0;
-let barDir=1;
+let barPos=0, barDir=1;
 
 kazBtn.onclick=()=>{
- if(barPos>170 && barPos<230){
-  activeArtifact.damage=0; // yeşil
- }else if(barPos>120 && barPos<280){
-  activeArtifact.damage=1; // sarı
- }else{
-  activeArtifact.damage=2; // kırmızı
+ let success=true;
+ if(barPos<120||barPos>280){
+  activeArtifact.damage=2;
+  success=false;
+ }
+ if(success){
+  const r=getRarity(activeArtifact.y);
+  museum.push(r);
  }
  kazBtn.style.display="none";
  gameState="play";
 };
 
+museumBtn.onclick=()=>{
+ showMuseum=!showMuseum;
+ gameState=showMuseum?"museum":"play";
+};
+
+// Başlat
 function start(p){
- platform=p;
  document.getElementById("menu").style.display="none";
  canvas.style.display="block";
- if(p==="mobile"){
+ if(p==="mobile")
   document.getElementById("mobileControls").style.display="flex";
- }
  loop();
 }
 
@@ -136,7 +196,8 @@ function update(){
   if(keys.left)player.x-=player.spd;
   if(keys.right)player.x+=player.spd;
 
-  if(player.y-cameraY>300)cameraY=player.y-300;
+  dig();
+  cameraY = player.y - canvas.height/2 + tile/2;
 
   artifacts.forEach(a=>{
    if(
@@ -159,32 +220,56 @@ function update(){
  }
 }
 
+function drawSoil(){
+ for(let y=0;y<rows;y++){
+  for(let x=0;x<cols;x++){
+   if(soil[y][x]){
+    ctx.fillStyle=soilColor(y*tile);
+    ctx.fillRect(x*tile,y*tile-cameraY,tile,tile);
+   }
+  }
+ }
+}
+
 function draw(){
- ctx.clearRect(0,0,400,600);
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ drawSoil();
 
- // Oyuncu
- ctx.fillStyle="blue";
- ctx.fillRect(player.x,player.y-cameraY,tile,tile);
-
- // Eser
+ // eserler
  artifacts.forEach(a=>{
-  ctx.fillStyle=
-   a.damage===0?"green":
-   a.damage===1?"yellow":"red";
+  const r=getRarity(a.y);
+  ctx.fillStyle=r.color;
   ctx.fillRect(a.x,a.y-cameraY,tile,tile);
  });
 
- // Tutturma çubuğu
- if(gameState==="kaz"){
-  ctx.fillStyle="red";
-  ctx.fillRect(50,250,300,20);
-  ctx.fillStyle="yellow";
-  ctx.fillRect(100,250,200,20);
-  ctx.fillStyle="green";
-  ctx.fillRect(170,250,60,20);
+ // oyuncu
+ ctx.fillStyle="blue";
+ ctx.fillRect(player.x,player.y-cameraY,tile,tile);
 
+ // kaz barı
+ if(gameState==="kaz"){
+  ctx.fillStyle="red";ctx.fillRect(50,250,300,20);
+  ctx.fillStyle="yellow";ctx.fillRect(100,250,200,20);
+  ctx.fillStyle="green";ctx.fillRect(170,250,60,20);
+  ctx.fillStyle="white";ctx.fillRect(50+barPos,245,5,30);
+ }
+
+ // müze
+ if(showMuseum){
+  ctx.fillStyle="rgba(0,0,0,0.85)";
+  ctx.fillRect(0,0,400,600);
   ctx.fillStyle="white";
-  ctx.fillRect(50+barPos,245,5,30);
+  ctx.font="24px Arial";
+  ctx.fillText("🏛️ MÜZE",130,50);
+  ctx.font="18px Arial";
+  if(museum.length===0){
+   ctx.fillText("Henüz eser yok",110,100);
+  }else{
+   museum.forEach((e,i)=>{
+    ctx.fillStyle=e.color;
+    ctx.fillText((i+1)+". "+e.name+" eser",80,100+i*30);
+   });
+  }
  }
 }
 
