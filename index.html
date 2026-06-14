@@ -23,7 +23,7 @@
     .btn { background: #FF6B35; color: white; padding: 14px 28px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
     .btn:hover { opacity: 0.9; }
     
-    /* Yeni Ürün Ekleme Paneli Stilleri */
+    /* Ürün Ekleme Paneli */
     .form-panel { background: #f4f4f4; padding: 30px 0; border-bottom: 1px solid #ddd; display: none; }
     .form-panel.show { display: block; }
     .product-form { max-width: 500px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -81,12 +81,177 @@
       .grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Senin Gönderdiğin Firebase Yapılandırması
+    const firebaseConfig = {
+      apiKey: "AIzaSyBrUsuZpJCeKaeKgfrA7kG6omOI25nkHog",
+      authDomain: "sitebu-2.firebaseapp.com",
+      databaseURL: "https://sitebu-2-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "sitebu-2",
+      storageBucket: "sitebu-2.firebasestorage.app",
+      messagingSenderId: "649225105088",
+      appId: "1:649225105088:web:8b9523de2db66e5d57c725",
+      measurementId: "G-N16W2SQTBG"
+    };
+
+    // Firebase Başlatılıyor
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const productsRef = ref(db, 'urunler');
+
+    // WHATSAPP NUMARANI BURAYA YAZ: 90 ile başla, başında + olmasın
+    const WHATSAPP_NUMARA = "905xxxxxxxxx";
+
+    let URUNLER = [];
+    let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
+
+    // Veri tabanından ürünleri anlık (Realtime) çekme
+    onValue(productsRef, (snapshot) => {
+      const data = snapshot.val();
+      URUNLER = [];
+      if (data) {
+        // Firebase'deki objeleri diziye çeviriyoruz
+        Object.keys(data).forEach(key => {
+          URUNLER.push({ firebaseKey: key, ...data[key] });
+        });
+      }
+      renderProducts();
+    });
+
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      if (URUNLER.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#888; padding: 40px 0;">Henüz ürün eklenmemiş. Yukarıdaki + butonundan ilk ürünü ekleyin!</p>';
+        return;
+      }
+      grid.innerHTML = URUNLER.map(u => `
+        <div class="card">
+          <button class="delete-product-btn" onclick="deleteProduct('${u.firebaseKey}')" title="Ürünü Sil">&times;</button>
+          <img src="${u.gorsel}" alt="${u.ad}">
+          <div class="card-body">
+            <h3>${u.ad}</h3>
+            <p>${u.aciklama}</p>
+            <div class="card-footer">
+              <span class="price">${u.fiyat} TL</span>
+              <button class="add-btn" onclick="addToCart(${u.id})">Sepete Ekle</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Yeni Ürünü Firebase'e Kaydetme
+    window.handleNewProduct = function(event) {
+      event.preventDefault();
+      
+      const ad = document.getElementById('prodName').value;
+      const fiyat = parseFloat(document.getElementById('prodPrice').value);
+      const gorsel = document.getElementById('prodImg').value;
+      const aciklama = document.getElementById('prodDesc').value;
+      
+      const id = URUNLER.length > 0 ? Math.max(...URUNLER.map(u => u.id)) + 1 : 1;
+      const yeniUrun = { id, ad, fiyat, gorsel, aciklama };
+      
+      // Firebase Realtime Veri tabanına itme (Push)
+      const newProductPushRef = push(productsRef);
+      set(newProductPushRef, yeniUrun)
+        .then(() => {
+          document.getElementById('newProductForm').reset();
+          toggleFormPanel();
+        })
+        .catch((error) => alert("Hata oluştu: " + error.message));
+    }
+
+    // Ürünü Firebase'den Silme
+    window.deleteProduct = function(firebaseKey) {
+      if(confirm("Bu ürünü mağazadan tamamen kaldırmak istediğinize emin misiniz? Herkeste silinecektir!")) {
+        const itemRef = ref(db, `urunler/${firebaseKey}`);
+        remove(itemRef).catch((error) => alert("Silme hatası: " + error.message));
+      }
+    }
+
+    window.addToCart = function(id) {
+      const urun = URUNLER.find(u => u.id === id);
+      if(!urun) return;
+      const item = sepet.find(i => i.id === id);
+      if (item) item.adet++;
+      else sepet.push({...urun, adet: 1});
+      saveCart();
+      updateCartUI();
+    }
+
+    window.updateQty = function(id, delta) {
+      const item = sepet.find(i => i.id === id);
+      if (!item) return;
+      item.adet += delta;
+      if (item.adet <= 0) sepet = sepet.filter(i => i.id !== id);
+      saveCart();
+      updateCartUI();
+    }
+
+    function saveCart() {
+      localStorage.setItem('sepet', JSON.stringify(sepet));
+    }
+
+    window.updateCartUI = function() {
+      const count = sepet.reduce((sum, i) => sum + i.adet, 0);
+      document.getElementById('cartCount').textContent = count;
+      
+      const itemsDiv = document.getElementById('cartItems');
+      if (sepet.length === 0) {
+        itemsDiv.innerHTML = '<p style="text-align:center;color:#888;">Sepetin boş</p>';
+      } else {
+        itemsDiv.innerHTML = sepet.map(i => `
+          <div class="cart-item">
+            <img src="${i.gorsel}" alt="${i.ad}">
+            <div class="cart-item-info">
+              <h4>${i.ad}</h4>
+              <div>${i.fiyat} TL</div>
+              <div class="qty-controls">
+                <button onclick="updateQty(${i.id}, -1)">-</button>
+                <span>${i.adet}</span>
+                <button onclick="updateQty(${i.id}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
+      document.getElementById('cartTotal').textContent = total + ' TL';
+    }
+
+    window.toggleFormPanel = function() {
+      document.getElementById('formPanel').classList.toggle('show');
+    }
+
+    window.toggleCart = function() {
+      document.getElementById('cartPanel').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
+
+    window.whatsappOrder = function() {
+      if (sepet.length === 0) return alert('Sepetin boş!');
+      let msg = 'Merhaba, sitebu üzerinden şu ürünleri sipariş etmek istiyorum:%0A%0A';
+      sepet.forEach(i => {
+        msg += `- ${i.ad} x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
+      });
+      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
+      msg += `%0AToplam: ${total} TL`;
+      window.open(`https://wa.me/${WHATSAPP_NUMARA}?text=${msg}`, '_blank');
+    }
+
+    updateCartUI();
+  </script>
 </head>
 <body>
   <header>
     <div class="container">
       <div class="nav">
-        <!-- Site İsmi Güncellendi -->
         <div class="logo">sitebu</div>
         <div class="nav-buttons">
           <button class="add-product-toggle" onclick="toggleFormPanel()" title="Yeni Ürün Ekle">+</button>
@@ -101,7 +266,7 @@
   <div class="form-panel" id="formPanel">
     <div class="container">
       <form class="product-form" id="newProductForm" onsubmit="handleNewProduct(event)">
-        <h3>Yeni Ürün Ekle</h3>
+        <h3>Yeni Ürün Ekle (Herkes Görebilir)</h3>
         <div class="form-group">
           <label for="prodName">Ürün Adı</label>
           <input type="text" id="prodName" required placeholder="Örn: Seramik Kase">
@@ -118,7 +283,7 @@
           <label for="prodDesc">Açıklama</label>
           <textarea id="prodDesc" required placeholder="Ürün detaylarını yazın..."></textarea>
         </div>
-        <button type="submit" class="form-submit-btn">Ürünü Listeye Ekle</button>
+        <button type="submit" class="form-submit-btn">Ürünü Canlı Listeye Ekle</button>
       </form>
     </div>
   </div>
@@ -141,7 +306,7 @@
   <section class="about">
     <div class="container">
       <h2>sitebu Hakkında</h2>
-      <p>Merhaba! sitebu platformuna hoş geldiniz. Burada seramik, tekstil ve çeşitli el emeği göz nuru tasarımları bir araya getiriyoruz. Her ürün tek tek özenle hazırlanıyor ve doğrudan evinize sevgiyle gönderiliyor.</p>
+      <p>Merhaba! sitebu platformuna hoş geldiniz. Burada seramik, tekstil ve çeşitli el emeği göz nuru tasarımları bir araya getiriyoruz. Her ürün tek tek özenle hazırlanıyor, internet ortak veri tabanımızda toplanıyor ve doğrudan evinize sevgiyle gönderiliyor.</p>
     </div>
   </section>
 
@@ -175,145 +340,5 @@
       <button class="btn whatsapp-btn" onclick="whatsappOrder()">WhatsApp ile Sipariş Ver</button>
     </div>
   </div>
-
-  <script>
-    const VARSAYILAN_URUNLER = [
-      { id: 1, ad: "Seramik Kupa", fiyat: 250, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Kupa", aciklama: "El yapımı, 350ml" },
-      { id: 2, ad: "Makrome Duvar Süsü", fiyat: 400, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Makrome", aciklama: "100% pamuk ip" },
-      { id: 3, ad: "Kokulu Mum", fiyat: 180, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Mum", aciklama: "Lavanta aromalı soya mumu" },
-      { id: 4, ad: "Bez Çanta", fiyat: 150, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Canta", aciklama: "Baskılı kanvas çanta" },
-      { id: 5, ad: "Seramik Tabak", fiyat: 320, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Tabak", aciklama: "20cm çap, el boyama" },
-      { id: 6, ad: "Örgü Bere", fiyat: 200, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Bere", aciklama: "El örgüsü, yün" }
-    ];
-
-    // WHATSAPP NUMARANI BURAYA YAZ: 90 ile başla, başında + olmasın
-    const WHATSAPP_NUMARA = "905xxxxxxxxx";
-
-    let URUNLER = JSON.parse(localStorage.getItem('magaza_urunler')) || VARSAYILAN_URUNLER;
-    let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
-
-    function renderProducts() {
-      const grid = document.getElementById('productGrid');
-      grid.innerHTML = URUNLER.map(u => `
-        <div class="card">
-          <button class="delete-product-btn" onclick="deleteProduct(${u.id})" title="Ürünü Sil">&times;</button>
-          <img src="${u.gorsel}" alt="${u.ad}">
-          <div class="card-body">
-            <h3>${u.ad}</h3>
-            <p>${u.aciklama}</p>
-            <div class="card-footer">
-              <span class="price">${u.fiyat} TL</span>
-              <button class="add-btn" onclick="addToCart(${u.id})">Sepete Ekle</button>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function toggleFormPanel() {
-      document.getElementById('formPanel').classList.toggle('show');
-    }
-
-    function handleNewProduct(event) {
-      event.preventDefault();
-      
-      const ad = document.getElementById('prodName').value;
-      const fiyat = parseFloat(document.getElementById('prodPrice').value);
-      const gorsel = document.getElementById('prodImg').value;
-      const aciklama = document.getElementById('prodDesc').value;
-      
-      const id = URUNLER.length > 0 ? Math.max(...URUNLER.map(u => u.id)) + 1 : 1;
-      
-      const yeniUrun = { id, ad, fiyat, gorsel, aciklama };
-      
-      URUNLER.push(yeniUrun);
-      localStorage.setItem('magaza_urunler', JSON.stringify(URUNLER));
-      
-      renderProducts();
-      document.getElementById('newProductForm').reset();
-      toggleFormPanel();
-    }
-
-    function deleteProduct(id) {
-      if(confirm("Bu ürünü mağazadan tamamen kaldırmak istediğinize emin misiniz?")) {
-        URUNLER = URUNLER.filter(u => u.id !== id);
-        localStorage.setItem('magaza_urunler', JSON.stringify(URUNLER));
-        sepet = sepet.filter(i => i.id !== id);
-        saveCart();
-        renderProducts();
-        updateCartUI();
-      }
-    }
-
-    function addToCart(id) {
-      const urun = URUNLER.find(u => u.id === id);
-      const item = sepet.find(i => i.id === id);
-      if (item) item.adet++;
-      else sepet.push({...urun, adet: 1});
-      saveCart();
-      updateCartUI();
-    }
-
-    function updateQty(id, delta) {
-      const item = sepet.find(i => i.id === id);
-      if (!item) return;
-      item.adet += delta;
-      if (item.adet <= 0) sepet = sepet.filter(i => i.id !== id);
-      saveCart();
-      updateCartUI();
-    }
-
-    function saveCart() {
-      localStorage.setItem('sepet', JSON.stringify(sepet));
-    }
-
-    function updateCartUI() {
-      const count = sepet.reduce((sum, i) => sum + i.adet, 0);
-      document.getElementById('cartCount').textContent = count;
-      
-      const itemsDiv = document.getElementById('cartItems');
-      if (sepet.length === 0) {
-        itemsDiv.innerHTML = '<p style="text-align:center;color:#888;">Sepetin boş</p>';
-      } else {
-        itemsDiv.innerHTML = sepet.map(i => `
-          <div class="cart-item">
-            <img src="${i.gorsel}" alt="${i.ad}">
-            <div class="cart-item-info">
-              <h4>${i.ad}</h4>
-              <div>${i.fiyat} TL</div>
-              <div class="qty-controls">
-                <button onclick="updateQty(${i.id}, -1)">-</button>
-                <span>${i.adet}</span>
-                <button onclick="updateQty(${i.id}, 1)">+</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-      
-      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
-      document.getElementById('cartTotal').textContent = total + ' TL';
-    }
-
-    function toggleCart() {
-      document.getElementById('cartPanel').classList.toggle('open');
-      document.getElementById('overlay').classList.toggle('show');
-    }
-
-    function whatsappOrder() {
-      if (sepet.length === 0) return alert('Sepetin boş!');
-      // Mesaj şablonu "sitebu" olarak güncellendi
-      let msg = 'Merhaba, sitebu üzerinden şu ürünleri sipariş etmek istiyorum:%0A%0A';
-      sepet.forEach(i => {
-        msg += `- ${i.ad} x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
-      });
-      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
-      msg += `%0AToplam: ${total} TL`;
-      window.open(`https://wa.me/${WHATSAPP_NUMARA}?text=${msg}`, '_blank');
-    }
-
-    renderProducts();
-    updateCartUI();
-  </script>
 </body>
 </html>
