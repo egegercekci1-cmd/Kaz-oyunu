@@ -1,314 +1,232 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<title>Kazı Oyunu</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<style>
-html,body{
-  margin:0;padding:0;overflow:hidden;
-  background:#4a2f16;color:#fff;font-family:Arial
-}
-canvas{display:block;background:#6b4a2b}
-
-/* üst UI */
-#topUI{
-  position:fixed;top:10px;left:10px;z-index:5
-}
-#topUI button{
-  padding:8px 12px;margin-right:6px;font-size:14px
-}
-
-/* mobil kontroller */
-#mobileControls{
-  position:fixed;bottom:20px;left:0;right:0;
-  display:none;z-index:5;text-align:center
-}
-#mobileControls button{
-  padding:14px 16px;margin:6px;font-size:18px
-}
-
-/* kaz butonu */
-#digBtn{
-  position:fixed;bottom:120px;left:50%;
-  transform:translateX(-50%);
-  display:none;z-index:6
-}
-
-/* MENÜ */
-#menu{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,0.7);
-  display:flex;align-items:center;justify-content:center;
-  z-index:10
-}
-#menuPanel{
-  background:#6b4a2b;
-  padding:30px 40px;
-  text-align:center;
-  border-radius:8px
-}
-#menuPanel button{
-  display:block;
-  width:200px;
-  margin:10px auto;
-  padding:12px;
-  font-size:18px
-}
-
-/* geri butonu */
-.backBtn{
-  position:fixed;top:10px;right:10px;
-  z-index:6;font-size:16px;padding:8px 12px
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mağazam - El Yapımı Ürünler</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #eee; z-index: 100; }
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+    .logo { font-size: 24px; font-weight: 700; }
+    .cart-btn { position: relative; background: #FF6B35; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .cart-badge { position: absolute; top: -8px; right: -8px; background: #111; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .hero { text-align: center; padding: 80px 0; background: #f9f9f9; }
+    .hero h1 { font-size: 48px; margin-bottom: 16px; }
+    .hero p { font-size: 18px; color: #555; margin-bottom: 24px; }
+    .btn { background: #FF6B35; color: white; padding: 14px 28px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn:hover { opacity: 0.9; }
+    .products { padding: 60px 0; }
+    .products h2 { font-size: 32px; text-align: center; margin-bottom: 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+    .card { border: 1px solid #eee; border-radius: 12px; overflow: hidden; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-4px); }
+    .card img { width: 100%; height: 260px; object-fit: cover; }
+    .card-body { padding: 16px; }
+    .card h3 { font-size: 18px; margin-bottom: 8px; }
+    .card p { color: #666; font-size: 14px; margin-bottom: 12px; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; }
+    .price { font-size: 20px; font-weight: 700; color: #FF6B35; }
+    .add-btn { background: #111; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    .about, .contact { padding: 60px 0; background: #f9f9f9; }
+    .about h2, .contact h2 { font-size: 32px; text-align: center; margin-bottom: 24px; }
+    .about p { max-width: 700px; margin: 0 auto; text-align: center; color: #555; line-height: 1.6; }
+    .socials { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+    .socials a { color: #111; text-decoration: none; font-weight: 600; }
+    footer { text-align: center; padding: 30px 0; border-top: 1px solid #eee; color: #888; }
+    
+    .cart-panel { position: fixed; top: 0; right: -400px; width: 100%; max-width: 400px; height: 100vh; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: right 0.3s; z-index: 200; display: flex; flex-direction: column; }
+    .cart-panel.open { right: 0; }
+    .cart-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
+    .cart-header h3 { font-size: 20px; }
+    .close-cart { background: none; border: none; font-size: 28px; cursor: pointer; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 20px; }
+    .cart-item { display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+    .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+    .cart-item-info { flex: 1; }
+    .cart-item-info h4 { font-size: 14px; margin-bottom: 4px; }
+    .qty-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .qty-controls button { width: 24px; height: 24px; border: 1px solid #ddd; background: white; cursor: pointer; }
+    .cart-footer { padding: 20px; border-top: 1px solid #eee; }
+    .total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .whatsapp-btn { width: 100%; background: #25D366; }
+    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; display: none; }
+    .overlay.show { display: block; }
+    
+    @media (max-width: 768px) { 
+      .hero h1 { font-size: 36px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <div class="container">
+      <div class="nav">
+        <div class="logo">Mağazam</div>
+        <button class="cart-btn" onclick="toggleCart()">
+          Sepetim <span class="cart-badge" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-<canvas id="game"></canvas>
+  <section class="hero">
+    <div class="container">
+      <h1>El Yapımı Ürünlerimi Keşfet</h1>
+      <p>Her biri özenle hazırlanan özel tasarımlar</p>
+      <a href="#urunler" class="btn">Ürünlere Git</a>
+    </div>
+  </section>
 
-<!-- MENÜ -->
-<div id="menu">
-  <div id="menuPanel">
-    <h2>Platform Seç</h2>
-    <button onclick="selectPlatform('pc')">💻 PC</button>
-    <button onclick="selectPlatform('mobile')">📱 Mobil</button>
+  <section class="products" id="urunler">
+    <div class="container">
+      <h2>Ürünler</h2>
+      <div class="grid" id="productGrid"></div>
+    </div>
+  </section>
+
+  <section class="about">
+    <div class="container">
+      <h2>Hakkımda</h2>
+      <p>Merhaba! Ben Ayşe. 2020'den beri seramik ve tekstil üzerine el yapımı ürünler üretiyorum. Her ürün tek tek el emeği ile hazırlanıyor. Atölyemden evinize sevgiyle gönderiyorum.</p>
+    </div>
+  </section>
+
+  <section class="contact">
+    <div class="container">
+      <h2>İletişim</h2>
+      <div class="socials">
+        <a href="https://instagram.com/kullaniciadi" target="_blank">Instagram</a>
+        <a href="https://wa.me/905xxxxxxxxx" target="_blank">WhatsApp</a>
+        <a href="mailto:mail@adresin.com">E-posta</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">© 2026 Mağazam. Tüm hakları saklıdır.</div>
+  </footer>
+
+  <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+  <div class="cart-panel" id="cartPanel">
+    <div class="cart-header">
+      <h3>Sepetin</h3>
+      <button class="close-cart" onclick="toggleCart()">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-footer">
+      <div class="total">
+        <span>Toplam:</span>
+        <span id="cartTotal">0 TL</span>
+      </div>
+      <button class="btn whatsapp-btn" onclick="whatsappOrder()">WhatsApp ile Sipariş Ver</button>
+    </div>
   </div>
-</div>
 
-<div id="topUI">
-  <button onclick="openMuseum()">🏛️ Müze</button>
-  <button onclick="openShop()">🛒 Mağaza</button>
-</div>
+  <script>
+    // ÜRÜNLERİNİ BURADAN DÜZENLE
+    const URUNLER = [
+      { id: 1, ad: "Seramik Kupa", fiyat: 250, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Kupa", aciklama: "El yapımı, 350ml" },
+      { id: 2, ad: "Makrome Duvar Süsü", fiyat: 400, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Makrome", aciklama: "100% pamuk ip" },
+      { id: 3, ad: "Kokulu Mum", fiyat: 180, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Mum", aciklama: "Lavanta aromalı soya mumu" },
+      { id: 4, ad: "Bez Çanta", fiyat: 150, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Canta", aciklama: "Baskılı kanvas çanta" },
+      { id: 5, ad: "Seramik Tabak", fiyat: 320, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Tabak", aciklama: "20cm çap, el boyama" },
+      { id: 6, ad: "Örgü Bere", fiyat: 200, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Bere", aciklama: "El örgüsü, yün" }
+    ];
 
-<button id="digBtn" onclick="digAttempt()">⛏️ Kaz</button>
+    // WHATSAPP NUMARANI BURAYA YAZ: 90 ile başla, başında + olmasın
+    const WHATSAPP_NUMARA = "905xxxxxxxxx";
 
-<div id="mobileControls">
-  <button ontouchstart="move.left=true" ontouchend="move.left=false">⬅️</button>
-  <button ontouchstart="move.right=true" ontouchend="move.right=false">➡️</button>
-  <button ontouchstart="move.up=true" ontouchend="move.up=false">⬆️</button>
-  <button ontouchstart="move.down=true" ontouchend="move.down=false">⬇️</button>
-</div>
+    let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
 
-<button id="backBtn" class="backBtn" style="display:none" onclick="backToGame()">⬅️ Geri</button>
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = URUNLER.map(u => `
+        <div class="card">
+          <img src="${u.gorsel}" alt="${u.ad}">
+          <div class="card-body">
+            <h3>${u.ad}</h3>
+            <p>${u.aciklama}</p>
+            <div class="card-footer">
+              <span class="price">${u.fiyat} TL</span>
+              <button class="add-btn" onclick="addToCart(${u.id})">Sepete Ekle</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
 
-<script>
-/* ================= CANVAS ================= */
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-function resize(){
-  canvas.width=innerWidth;
-  canvas.height=innerHeight;
-}
-addEventListener("resize",resize);
-resize();
+    function addToCart(id) {
+      const urun = URUNLER.find(u => u.id === id);
+      const item = sepet.find(i => i.id === id);
+      if (item) item.adet++;
+      else sepet.push({...urun, adet: 1});
+      saveCart();
+      updateCartUI();
+    }
 
-/* ================= DURUMLAR ================= */
-let gameState="menu"; // menu, play, dig, museum, shop
-let controlType="pc";
+    function updateQty(id, delta) {
+      const item = sepet.find(i => i.id === id);
+      if (!item) return;
+      item.adet += delta;
+      if (item.adet <= 0) sepet = sepet.filter(i => i.id !== id);
+      saveCart();
+      updateCartUI();
+    }
 
-/* ================= HAREKET ================= */
-const move={left:false,right:false,up:false,down:false};
+    function saveCart() {
+      localStorage.setItem('sepet', JSON.stringify(sepet));
+    }
 
-/* ================= OYUNCU ================= */
-const player={x:200,y:100,size:32,speed:4};
-let cameraY=0;
+    function updateCartUI() {
+      const count = sepet.reduce((sum, i) => sum + i.adet, 0);
+      document.getElementById('cartCount').textContent = count;
+      
+      const itemsDiv = document.getElementById('cartItems');
+      if (sepet.length === 0) {
+        itemsDiv.innerHTML = '<p style="text-align:center;color:#888;">Sepetin boş</p>';
+      } else {
+        itemsDiv.innerHTML = sepet.map(i => `
+          <div class="cart-item">
+            <img src="${i.gorsel}" alt="${i.ad}">
+            <div class="cart-item-info">
+              <h4>${i.ad}</h4>
+              <div>${i.fiyat} TL</div>
+              <div class="qty-controls">
+                <button onclick="updateQty(${i.id}, -1)">-</button>
+                <span>${i.adet}</span>
+                <button onclick="updateQty(${i.id}, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
+      document.getElementById('cartTotal').textContent = total + ' TL';
+    }
 
-/* ================= EKONOMİ ================= */
-let money=0;
-let rarityBonus=0;
-let sellBonus=0;
-let digPrecision=0;
+    function toggleCart() {
+      document.getElementById('cartPanel').classList.toggle('open');
+      document.getElementById('overlay').classList.toggle('show');
+    }
 
-/* ================= MÜZE & MAĞAZA ================= */
-const museum=[];
-const shopItems=[
- {name:"+%5 Nadirlik",cost:50,buy:()=>rarityBonus+=5},
- {name:"Kazı Hassasiyeti",cost:40,buy:()=>digPrecision+=15},
- {name:"Satış +10 $A",cost:60,buy:()=>sellBonus+=10}
-];
+    function whatsappOrder() {
+      if (sepet.length === 0) return alert('Sepetin boş!');
+      let msg = 'Merhaba, siteden şu ürünleri sipariş etmek istiyorum:%0A%0A';
+      sepet.forEach(i => {
+        msg += `- ${i.ad} x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
+      });
+      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
+      msg += `%0AToplam: ${total} TL`;
+      window.open(`https://wa.me/${WHATSAPP_NUMARA}?text=${msg}`, '_blank');
+    }
 
-/* ================= ESERLER ================= */
-const artifacts=[
- {x:120,y:500,done:false},
- {x:260,y:900,done:false},
- {x:180,y:1400,done:false}
-];
-
-function rollRarity(y){
- let r=Math.random()*100+rarityBonus;
- if(y<600) return r<80?{n:"Sıradan",c:"blue",v:10}:{n:"Epic",c:"purple",v:30};
- if(y<1200){
-  if(r<60) return {n:"Epic",c:"purple",v:30};
-  if(r<90) return {n:"Sıradan",c:"blue",v:10};
-  return {n:"Efsanevi",c:"gold",v:100};
- }
- return r<70?{n:"Epic",c:"purple",v:30}:{n:"Efsanevi",c:"gold",v:100};
-}
-artifacts.forEach(a=>a.rarity=rollRarity(a.y));
-
-/* ================= KAZI ================= */
-let activeArtifact=null;
-let barPos=200,barDir=1,digTries=0;
-
-function startDig(a){
- activeArtifact=a;
- gameState="dig";
- digTries=0;
- document.getElementById("digBtn").style.display="block";
-}
-
-function getZone(pos){
- const g1=180-digPrecision/2,g2=220+digPrecision/2;
- if(pos>g1&&pos<g2)return"green";
- if(pos>140&&pos<260)return"yellow";
- return"red";
-}
-
-function digAttempt(){
- const z=getZone(barPos);
- if(z==="green"){collect();closeDig()}
- else if(z==="yellow"){
-  digTries++; if(digTries>=2){breakArt();closeDig()}
- }
- else{breakArt();closeDig()}
-}
-
-function collect(){
- museum.push(activeArtifact.rarity);
- money+=activeArtifact.rarity.v+sellBonus;
- activeArtifact.done=true;
-}
-function breakArt(){activeArtifact.done=true}
-function closeDig(){
- gameState="play";
- activeArtifact=null;
- document.getElementById("digBtn").style.display="none";
-}
-
-/* ================= KONTROLLER ================= */
-document.addEventListener("keydown",e=>{
- if(controlType!=="pc")return;
- if(e.key==="ArrowLeft")move.left=true;
- if(e.key==="ArrowRight")move.right=true;
- if(e.key==="ArrowUp")move.up=true;
- if(e.key==="ArrowDown")move.down=true;
- if(e.key===" "&&gameState==="dig")digAttempt();
-});
-document.addEventListener("keyup",e=>{
- if(controlType!=="pc")return;
- if(e.key==="ArrowLeft")move.left=false;
- if(e.key==="ArrowRight")move.right=false;
- if(e.key==="ArrowUp")move.up=false;
- if(e.key==="ArrowDown")move.down=false;
-});
-
-/* ================= UI FONKS ================= */
-function selectPlatform(t){
- controlType=t;
- document.getElementById("menu").style.display="none";
- if(t==="mobile")document.getElementById("mobileControls").style.display="block";
- gameState="play";
-}
-function openMuseum(){
- gameState="museum";
- document.getElementById("backBtn").style.display="block";
-}
-function openShop(){
- gameState="shop";
- document.getElementById("backBtn").style.display="block";
-}
-function backToGame(){
- gameState="play";
- document.getElementById("backBtn").style.display="none";
-}
-
-/* ================= UPDATE ================= */
-function update(){
- if(gameState!=="play")return;
- if(move.left)player.x-=player.speed;
- if(move.right)player.x+=player.speed;
- if(move.up)player.y-=player.speed;
- if(move.down)player.y+=player.speed;
- cameraY=player.y-canvas.height/2;
-}
-
-/* ================= DRAW ================= */
-function draw(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
-
- if(gameState==="play"||gameState==="dig"){
-  ctx.fillStyle="blue";
-  ctx.fillRect(player.x,player.y-cameraY,player.size,player.size);
-
-  artifacts.forEach(a=>{
-   if(a.done)return;
-   ctx.fillStyle=a.rarity.c;
-   ctx.fillRect(a.x,a.y-cameraY,30,30);
-   if(gameState==="play"&&Math.abs(player.x-a.x)<30&&Math.abs(player.y-a.y)<30){
-    startDig(a);
-   }
-  });
-
-  ctx.fillStyle="#fff";
-  ctx.fillText("💰 "+money+" $A",20,30);
- }
-
- if(gameState==="dig"){
-  barPos+=barDir*4;
-  if(barPos>300||barPos<100)barDir*=-1;
-
-  ctx.fillStyle="#222";
-  ctx.fillRect(canvas.width/2-150,canvas.height/2-10,300,20);
-  ctx.fillStyle="red";
-  ctx.fillRect(canvas.width/2-150,canvas.height/2-10,60,20);
-  ctx.fillRect(canvas.width/2+90,canvas.height/2-10,60,20);
-  ctx.fillStyle="yellow";
-  ctx.fillRect(canvas.width/2-90,canvas.height/2-10,180,20);
-  ctx.fillStyle="green";
-  ctx.fillRect(canvas.width/2-40-digPrecision/2,canvas.height/2-10,80+digPrecision,20);
-  ctx.fillStyle="#fff";
-  ctx.fillRect(canvas.width/2-150+barPos-100,canvas.height/2-15,4,30);
- }
-
- if(gameState==="museum"){
-  ctx.fillStyle="#000";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle="#fff";
-  ctx.fillText("🏛️ Müze",canvas.width/2-40,40);
-  museum.forEach((e,i)=>{
-   ctx.fillStyle=e.c;
-   ctx.fillText(e.n+" ("+e.v+"$)",80,80+i*30);
-  });
- }
-
- if(gameState==="shop"){
-  ctx.fillStyle="#000";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle="#fff";
-  ctx.fillText("🛒 Mağaza",canvas.width/2-50,40);
-  shopItems.forEach((s,i)=>{
-   ctx.fillText(s.name+" - "+s.cost+"$A",60,100+i*40);
-  });
- }
-}
-
-/* ================= MAĞAZA TIK ================= */
-canvas.addEventListener("click",()=>{
- if(gameState==="shop"){
-  shopItems.forEach(s=>{
-   if(money>=s.cost){money-=s.cost;s.buy()}
-  });
- }
-});
-
-/* ================= LOOP ================= */
-function loop(){
- update();
- draw();
- requestAnimationFrame(loop);
-}
-loop();
-</script>
+    renderProducts();
+    updateCartUI();
+  </script>
 </body>
 </html>
