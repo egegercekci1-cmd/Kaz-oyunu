@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mağazam - El Yapımı Ürünler</title>
+  <title>sitebu - El Yapımı Ürünler</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
     header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #eee; z-index: 100; }
     .nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
-    .logo { font-size: 24px; font-weight: 700; }
+    .logo { font-size: 24px; font-weight: 700; color: #111; text-transform: lowercase; }
     
     .nav-buttons { display: flex; gap: 12px; align-items: center; }
     .add-product-toggle { background: #111; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; }
@@ -86,9 +86,9 @@
   <header>
     <div class="container">
       <div class="nav">
-        <div class="logo">Mağazam</div>
+        <!-- Site İsmi Güncellendi -->
+        <div class="logo">sitebu</div>
         <div class="nav-buttons">
-          <!-- Ürün Ekleme Paneli Açma Butonu (+) -->
           <button class="add-product-toggle" onclick="toggleFormPanel()" title="Yeni Ürün Ekle">+</button>
           <button class="cart-btn" onclick="toggleCart()">
             Sepetim <span class="cart-badge" id="cartCount">0</span>
@@ -98,7 +98,6 @@
     </div>
   </header>
 
-  <!-- Yeni Ürün Ekleme Form Alanı -->
   <div class="form-panel" id="formPanel">
     <div class="container">
       <form class="product-form" id="newProductForm" onsubmit="handleNewProduct(event)">
@@ -126,7 +125,7 @@
 
   <section class="hero">
     <div class="container">
-      <h1>El Yapımı Ürünlerimi Keşfet</h1>
+      <h1>sitebu El Yapımı Ürün Dünyası</h1>
       <p>Her biri özenle hazırlanan özel tasarımlar</p>
       <a href="#urunler" class="btn">Ürünlere Git</a>
     </div>
@@ -141,8 +140,8 @@
 
   <section class="about">
     <div class="container">
-      <h2>Hakkımda</h2>
-      <p>Merhaba! Ben Ayşe. 2020'den beri seramik ve tekstil üzerine el yapımı ürünler üretiyorum. Her ürün tek tek el emeği ile hazırlanıyor. Atölyemden evinize sevgiyle gönderiyorum.</p>
+      <h2>sitebu Hakkında</h2>
+      <p>Merhaba! sitebu platformuna hoş geldiniz. Burada seramik, tekstil ve çeşitli el emeği göz nuru tasarımları bir araya getiriyoruz. Her ürün tek tek özenle hazırlanıyor ve doğrudan evinize sevgiyle gönderiliyor.</p>
     </div>
   </section>
 
@@ -158,7 +157,7 @@
   </section>
 
   <footer>
-    <div class="container">© 2026 Mağazam. Tüm hakları saklıdır.</div>
+    <div class="container">© 2026 sitebu. Tüm hakları saklıdır.</div>
   </footer>
 
   <div class="overlay" id="overlay" onclick="toggleCart()"></div>
@@ -178,7 +177,6 @@
   </div>
 
   <script>
-    // Varsayılan İlk Ürünler
     const VARSAYILAN_URUNLER = [
       { id: 1, ad: "Seramik Kupa", fiyat: 250, gorsel: "https://via.placeholder.com/400x400/FF6B35/fff?text=Kupa", aciklama: "El yapımı, 350ml" },
       { id: 2, ad: "Makrome Duvar Süsü", fiyat: 400, gorsel: "https://via.placeholder.com/400x400/111/fff?text=Makrome", aciklama: "100% pamuk ip" },
@@ -191,7 +189,6 @@
     // WHATSAPP NUMARANI BURAYA YAZ: 90 ile başla, başında + olmasın
     const WHATSAPP_NUMARA = "905xxxxxxxxx";
 
-    // Ürünleri LocalStorage'dan al, yoksa varsayılanları yükle
     let URUNLER = JSON.parse(localStorage.getItem('magaza_urunler')) || VARSAYILAN_URUNLER;
     let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
 
@@ -199,7 +196,6 @@
       const grid = document.getElementById('productGrid');
       grid.innerHTML = URUNLER.map(u => `
         <div class="card">
-          <!-- Yanlış eklenen ürünü silmek için çarpı butonu -->
           <button class="delete-product-btn" onclick="deleteProduct(${u.id})" title="Ürünü Sil">&times;</button>
           <img src="${u.gorsel}" alt="${u.ad}">
           <div class="card-body">
@@ -214,12 +210,10 @@
       `).join('');
     }
 
-    // Ürün Ekleme Formunu Aç/Kapat
     function toggleFormPanel() {
       document.getElementById('formPanel').classList.toggle('show');
     }
 
-    // Form Gönderildiğinde Yeni Ürünü Ekleme Fonksiyonu
     function handleNewProduct(event) {
       event.preventDefault();
       
@@ -228,7 +222,6 @@
       const gorsel = document.getElementById('prodImg').value;
       const aciklama = document.getElementById('prodDesc').value;
       
-      // Benzersiz ID üretme
       const id = URUNLER.length > 0 ? Math.max(...URUNLER.map(u => u.id)) + 1 : 1;
       
       const yeniUrun = { id, ad, fiyat, gorsel, aciklama };
@@ -238,15 +231,13 @@
       
       renderProducts();
       document.getElementById('newProductForm').reset();
-      toggleFormPanel(); // Formu kapat
+      toggleFormPanel();
     }
 
-    // Eklenen Ürünü Listeden Silme Fonksiyonu
     function deleteProduct(id) {
       if(confirm("Bu ürünü mağazadan tamamen kaldırmak istediğinize emin misiniz?")) {
         URUNLER = URUNLER.filter(u => u.id !== id);
         localStorage.setItem('magaza_urunler', JSON.stringify(URUNLER));
-        // Sepette varsa oradan da çıkar
         sepet = sepet.filter(i => i.id !== id);
         saveCart();
         renderProducts();
@@ -311,7 +302,8 @@
 
     function whatsappOrder() {
       if (sepet.length === 0) return alert('Sepetin boş!');
-      let msg = 'Merhaba, siteden şu ürünleri sipariş etmek istiyorum:%0A%0A';
+      // Mesaj şablonu "sitebu" olarak güncellendi
+      let msg = 'Merhaba, sitebu üzerinden şu ürünleri sipariş etmek istiyorum:%0A%0A';
       sepet.forEach(i => {
         msg += `- ${i.ad} x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
       });
