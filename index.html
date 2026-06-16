@@ -13,43 +13,41 @@
     .logo { font-size: 24px; font-weight: 700; color: #111; text-transform: lowercase; }
     
     .nav-buttons { display: flex; gap: 12px; align-items: center; }
-    .add-product-toggle { background: #111; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .add-product-toggle { background: #111; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; display: flex; align-items: center; justify-content: center; display: none; }
     
+    .auth-btn { background: #eee; color: #111; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; text-decoration: none; }
     .cart-btn { position: relative; background: #FF6B35; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .cart-badge { position: absolute; top: -8px; right: -8px; background: #111; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
-    .hero { text-align: center; padding: 80px 0; background: #f9f9f9; }
-    .hero h1 { font-size: 48px; margin-bottom: 16px; }
-    .hero p { font-size: 18px; color: #555; margin-bottom: 24px; }
-    .btn { background: #FF6B35; color: white; padding: 14px 28px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
-    .btn:hover { opacity: 0.9; }
     
-    /* Ürün Ekleme Paneli */
+    /* Üyelik ve Form Panelleri */
     .form-panel { background: #f4f4f4; padding: 30px 0; border-bottom: 1px solid #ddd; display: none; }
     .form-panel.show { display: block; }
-    .product-form { max-width: 500px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .product-form h3 { margin-bottom: 16px; font-size: 20px; text-align: center; }
+    .product-form, .auth-form { max-width: 500px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .product-form h3, .auth-form h3 { margin-bottom: 16px; font-size: 20px; text-align: center; }
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
     .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
     .form-group textarea { resize: vertical; height: 80px; }
     .form-submit-btn { width: 100%; background: #28a745; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; }
     .form-submit-btn:hover { background: #218838; }
+    .form-toggle-link { text-align: center; margin-top: 12px; font-size: 14px; color: #555; cursor: pointer; text-decoration: underline; }
 
+    /* Ürün Kartı Güncellemeleri */
     .products { padding: 60px 0; }
     .products h2 { font-size: 32px; text-align: center; margin-bottom: 40px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-    .card { border: 1px solid #eee; border-radius: 12px; overflow: hidden; transition: transform 0.2s; position: relative; }
+    .card { border: 1px solid #eee; border-radius: 12px; overflow: hidden; transition: transform 0.2s; position: relative; background: #fff; }
     .card:hover { transform: translateY(-4px); }
     .card img { width: 100%; height: 260px; object-fit: cover; }
     .card-body { padding: 16px; }
-    .card h3 { font-size: 18px; margin-bottom: 8px; }
+    .card h3 { font-size: 18px; margin-bottom: 4px; }
+    .seller-info { font-size: 12px; color: #888; margin-bottom: 12px; font-style: italic; display: block; }
     .card p { color: #666; font-size: 14px; margin-bottom: 12px; }
     .card-footer { display: flex; justify-content: space-between; align-items: center; }
     .price { font-size: 20px; font-weight: 700; color: #FF6B35; }
     .add-btn { background: #111; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
     
-    /* Ürün Silme Butonu */
-    .delete-product-btn { position: absolute; top: 10px; left: 10px; background: rgba(220, 53, 69, 0.9); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+    .delete-product-btn { position: absolute; top: 10px; left: 10px; background: rgba(220, 53, 69, 0.9); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; display: none; }
 
     .about, .contact { padding: 60px 0; background: #f9f9f9; }
     .about h2, .contact h2 { font-size: 32px; text-align: center; margin-bottom: 24px; }
@@ -85,8 +83,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Senin Gönderdiğin Firebase Yapılandırması
     const firebaseConfig = {
       apiKey: "AIzaSyBrUsuZpJCeKaeKgfrA7kG6omOI25nkHog",
       authDomain: "sitebu-2.firebaseapp.com",
@@ -98,23 +96,41 @@
       measurementId: "G-N16W2SQTBG"
     };
 
-    // Firebase Başlatılıyor
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
     const productsRef = ref(db, 'urunler');
 
-    // WHATSAPP NUMARANI BURAYA YAZ: 90 ile başla, başında + olmasın
     const WHATSAPP_NUMARA = "905xxxxxxxxx";
 
     let URUNLER = [];
     let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
+    let currentUser = null;
 
-    // Veri tabanından ürünleri anlık (Realtime) çekme
+    // Oturum Kontrolü
+    onAuthStateChanged(auth, (user) => {
+      const authBtn = document.getElementById('authBtn');
+      const addToggle = document.getElementById('addProductToggle');
+      
+      if (user) {
+        currentUser = user;
+        authBtn.textContent = "Çıkış Yap (" + user.email.split('@')[0] + ")";
+        addToggle.style.display = "flex"; // Giriş yaptıysa + butonunu göster
+      } else {
+        currentUser = null;
+        authBtn.textContent = "Giriş Yap / Kaydol";
+        addToggle.style.display = "none"; // Giriş yapmadıysa + butonunu gizle
+        document.getElementById('formPanel').classList.remove('show');
+        document.getElementById('authPanel').classList.remove('show');
+      }
+      renderProducts();
+    });
+
+    // Veri Tabanından Ürünleri Çekme
     onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
       URUNLER = [];
       if (data) {
-        // Firebase'deki objeleri diziye çeviriyoruz
         Object.keys(data).forEach(key => {
           URUNLER.push({ firebaseKey: key, ...data[key] });
         });
@@ -125,28 +141,78 @@
     function renderProducts() {
       const grid = document.getElementById('productGrid');
       if (URUNLER.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#888; padding: 40px 0;">Henüz ürün eklenmemiş. Yukarıdaki + butonundan ilk ürünü ekleyin!</p>';
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#888; padding: 40px 0;">Henüz ürün eklenmemiş.</p>';
         return;
       }
-      grid.innerHTML = URUNLER.map(u => `
-        <div class="card">
-          <button class="delete-product-btn" onclick="deleteProduct('${u.firebaseKey}')" title="Ürünü Sil">&times;</button>
-          <img src="${u.gorsel}" alt="${u.ad}">
-          <div class="card-body">
-            <h3>${u.ad}</h3>
-            <p>${u.aciklama}</p>
-            <div class="card-footer">
-              <span class="price">${u.fiyat} TL</span>
-              <button class="add-btn" onclick="addToCart(${u.id})">Sepete Ekle</button>
+      grid.innerHTML = URUNLER.map(u => {
+        // Ürünü silme yetkisi kontrolü (Sadece ekleyen kişi silebilir)
+        const canDelete = currentUser && currentUser.uid === u.saticiId;
+        const deleteBtnHtml = canDelete ? `<button class="delete-product-btn" style="display:block;" onclick="deleteProduct('${u.firebaseKey}')" title="Ürünü Sil">&times;</button>` : '';
+        
+        return `
+          <div class="card">
+            ${deleteBtnHtml}
+            <img src="${u.gorsel}" alt="${u.ad}">
+            <div class="card-body">
+              <h3>${u.ad}</h3>
+              <small class="seller-info">Satıcı: ${u.saticiEposta || 'Bilinmeyen Satıcı'}</small>
+              <p>${u.aciklama}</p>
+              <div class="card-footer">
+                <span class="price">${u.fiyat} TL</span>
+                <button class="add-btn" onclick="addToCart(${u.id})">Sepete Ekle</button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    // Yeni Ürünü Firebase'e Kaydetme
+    // Üyelik İşlemleri (Kayıt / Giriş)
+    window.handleAuth = function(event) {
+      event.preventDefault();
+      const email = document.getElementById('authEmail').value;
+      const pass = document.getElementById('authPassword').value;
+      const isLogin = document.getElementById('authSubmitBtn').textContent === "Giriş Yap";
+
+      if (isLogin) {
+        signInWithEmailAndPassword(auth, email, pass)
+          .then(() => toggleAuthPanel())
+          .catch(err => alert("Giriş Hatası: " + err.message));
+      } else {
+        createUserWithEmailAndPassword(auth, email, pass)
+          .then(() => toggleAuthPanel())
+          .catch(err => alert("Kayıt Hatası: " + err.message));
+      }
+    }
+
+    window.toggleAuthOrSignout = function() {
+      if (currentUser) {
+        signOut(auth);
+      } else {
+        document.getElementById('formPanel').classList.remove('show');
+        document.getElementById('authPanel').classList.toggle('show');
+      }
+    }
+
+    window.switchAuthMode = function() {
+      const title = document.getElementById('authTitle');
+      const btn = document.getElementById('authSubmitBtn');
+      const link = document.getElementById('authLink');
+      if (btn.textContent === "Giriş Yap") {
+        title.textContent = "Hesap Oluştur";
+        btn.textContent = "Kaydol";
+        link.textContent = "Zaten hesabınız var mı? Giriş Yapın";
+      } else {
+        title.textContent = "Giriş Yap";
+        btn.textContent = "Giriş Yap";
+        link.textContent = "Hesabınız yok mu? Yeni Hesap Açın";
+      }
+    }
+
+    // Yeni Ürün Ekleme (Satıcı Bilgisiyle Beraber)
     window.handleNewProduct = function(event) {
       event.preventDefault();
+      if (!currentUser) return alert("Ürün eklemek için giriş yapmalısınız!");
       
       const ad = document.getElementById('prodName').value;
       const fiyat = parseFloat(document.getElementById('prodPrice').value);
@@ -154,23 +220,30 @@
       const aciklama = document.getElementById('prodDesc').value;
       
       const id = URUNLER.length > 0 ? Math.max(...URUNLER.map(u => u.id)) + 1 : 1;
-      const yeniUrun = { id, ad, fiyat, gorsel, aciklama };
       
-      // Firebase Realtime Veri tabanına itme (Push)
+      const yeniUrun = { 
+        id, 
+        ad, 
+        fiyat, 
+        gorsel, 
+        aciklama,
+        saticiId: currentUser.uid, // Ekleyenin Benzersiz ID'si
+        saticiEposta: currentUser.email // Ekleyenin E-postası
+      };
+      
       const newProductPushRef = push(productsRef);
       set(newProductPushRef, yeniUrun)
         .then(() => {
           document.getElementById('newProductForm').reset();
           toggleFormPanel();
         })
-        .catch((error) => alert("Hata oluştu: " + error.message));
+        .catch((error) => alert("Hata: " + error.message));
     }
 
-    // Ürünü Firebase'den Silme
     window.deleteProduct = function(firebaseKey) {
-      if(confirm("Bu ürünü mağazadan tamamen kaldırmak istediğinize emin misiniz? Herkeste silinecektir!")) {
+      if(confirm("Bu ürünü mağazadan kaldırmak istiyor musunuz?")) {
         const itemRef = ref(db, `urunler/${firebaseKey}`);
-        remove(itemRef).catch((error) => alert("Silme hatası: " + error.message));
+        remove(itemRef).catch((error) => alert("Hata: " + error.message));
       }
     }
 
@@ -226,7 +299,13 @@
     }
 
     window.toggleFormPanel = function() {
+      document.getElementById('authPanel').classList.remove('show');
       document.getElementById('formPanel').classList.toggle('show');
+    }
+
+    window.toggleAuthPanel = function() {
+      document.getElementById('formPanel').classList.remove('show');
+      document.getElementById('authPanel').classList.toggle('show');
     }
 
     window.toggleCart = function() {
@@ -238,7 +317,7 @@
       if (sepet.length === 0) return alert('Sepetin boş!');
       let msg = 'Merhaba, sitebu üzerinden şu ürünleri sipariş etmek istiyorum:%0A%0A';
       sepet.forEach(i => {
-        msg += `- ${i.ad} x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
+        msg += `- ${i.ad} (Satıcı: ${i.saticiEposta}) x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
       });
       const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
       msg += `%0AToplam: ${total} TL`;
@@ -254,7 +333,8 @@
       <div class="nav">
         <div class="logo">sitebu</div>
         <div class="nav-buttons">
-          <button class="add-product-toggle" onclick="toggleFormPanel()" title="Yeni Ürün Ekle">+</button>
+          <button class="auth-btn" id="authBtn" onclick="toggleAuthOrSignout()">Giriş Yap / Kaydol</button>
+          <button class="add-product-toggle" id="addProductToggle" onclick="toggleFormPanel()" title="Yeni Ürün Ekle">+</button>
           <button class="cart-btn" onclick="toggleCart()">
             Sepetim <span class="cart-badge" id="cartCount">0</span>
           </button>
@@ -263,10 +343,28 @@
     </div>
   </header>
 
+  <div class="form-panel" id="authPanel">
+    <div class="container">
+      <form class="auth-form" onsubmit="handleAuth(event)">
+        <h3 id="authTitle">Giriş Yap</h3>
+        <div class="form-group">
+          <label>E-posta</label>
+          <input type="email" id="authEmail" required placeholder="ornek@mail.com">
+        </div>
+        <div class="form-group">
+          <label>Şifre</label>
+          <input type="password" id="authPassword" required placeholder="••••••">
+        </div>
+        <button type="submit" class="form-submit-btn" id="authSubmitBtn">Giriş Yap</button>
+        <div class="form-toggle-link" id="authLink" onclick="switchAuthMode()">Hesabınız yok mu? Yeni Hesap Açın</div>
+      </form>
+    </div>
+  </div>
+
   <div class="form-panel" id="formPanel">
     <div class="container">
       <form class="product-form" id="newProductForm" onsubmit="handleNewProduct(event)">
-        <h3>Yeni Ürün Ekle (Herkes Görebilir)</h3>
+        <h3>Yeni Ürün Ekle</h3>
         <div class="form-group">
           <label for="prodName">Ürün Adı</label>
           <input type="text" id="prodName" required placeholder="Örn: Seramik Kase">
@@ -306,7 +404,7 @@
   <section class="about">
     <div class="container">
       <h2>sitebu Hakkında</h2>
-      <p>Merhaba! sitebu platformuna hoş geldiniz. Burada seramik, tekstil ve çeşitli el emeği göz nuru tasarımları bir araya getiriyoruz. Her ürün tek tek özenle hazırlanıyor, internet ortak veri tabanımızda toplanıyor ve doğrudan evinize sevgiyle gönderiliyor.</p>
+      <p>Merhaba! sitebu platformuna hoş geldiniz. Herkesin kendi el emeği göz nuru tasarımlarını listeleyebileceği ortak pazar yerimiz.</p>
     </div>
   </section>
 
