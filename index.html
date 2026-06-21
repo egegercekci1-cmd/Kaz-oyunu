@@ -27,7 +27,8 @@
     .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
     .form-group textarea { resize: vertical; height: 80px; }
     .form-submit-btn { width: 100%; background: #28a745; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px; }
-    
+    .form-toggle-link { text-align: center; margin-top: 12px; font-size: 14px; color: #555; cursor: pointer; text-decoration: underline; }
+
     /* Gelen Kutusu / Mesaj Listesi Paneli */
     .chats-list-container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .chat-list-item { padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
@@ -106,7 +107,6 @@
     let aktifUrunAdı = "";
     let chatListenUnsubscribe = null;
 
-    // Oturum Kontrolü
     onAuthStateChanged(auth, (user) => {
       const authBtn = document.getElementById('authBtn');
       const addToggle = document.getElementById('addProductToggle');
@@ -118,7 +118,7 @@
         authBtn.textContent = "Çıkış Yap (" + gosterilecekIsim + ")";
         addToggle.style.display = "flex";
         myChatsBtn.style.display = "block";
-        dinleMesajOdalarini(); // Kullanıcının mesaj listesini arka planda doldur
+        dinleMesajOdalarini();
       } else {
         currentUser = null;
         authBtn.textContent = "Giriş Yap / Kaydol";
@@ -132,7 +132,6 @@
       renderProducts();
     });
 
-    // Mağazadaki Ürünleri Çekme
     onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
       URUNLER = [];
@@ -149,9 +148,9 @@
       const profileBox = document.getElementById('profileHeaderBox');
       const profileNameSpan = document.getElementById('profileName');
 
-      let gösterilecekList = URUNLER;
+      let gosterilecekList = URUNLER;
       if (aktifProfilId) {
-        gösterilecekList = URUNLER.filter(u => u.saticiId === aktifProfilId);
+        gosterilecekList = URUNLER.filter(u => u.saticiId === aktifProfilId);
         profileBox.style.display = "block";
         const bulunanUrun = URUNLER.find(u => u.saticiId === aktifProfilId);
         profileNameSpan.textContent = bulunanUrun ? bulunanUrun.saticiIsmi : "Bilinmeyen Mağaza";
@@ -159,12 +158,12 @@
         profileBox.style.display = "none";
       }
 
-      if (gösterilecekList.length === 0) {
+      if (gosterilecekList.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#888; padding: 40px 0;">Gösterilecek ürün bulunamadı.</p>';
         return;
       }
 
-      grid.innerHTML = gösterilecekList.map(u => {
+      grid.innerHTML = gosterilecekList.map(u => {
         const canDelete = currentUser && currentUser.uid === u.saticiId;
         const deleteBtnHtml = canDelete ? `<button class="delete-product-btn" style="display:block;" onclick="deleteProduct('${u.firebaseKey}')" title="Ürünü Sil">&times;</button>` : '';
         
@@ -189,7 +188,6 @@
       }).join('');
     }
 
-    // ARKA PLANDA GELEN SOHBET ODALARINI DİNLEME (SATICI İÇİN)
     function dinleMesajOdalarini() {
       if (!currentUser) return;
       onValue(allChatsRef, (snapshot) => {
@@ -198,23 +196,20 @@
         listDiv.innerHTML = '';
         
         if (!data) {
-          listDiv.innerHTML = '<p style="text-align:center;color:#aa;font-size:13px;">Henüz bir mesajlaşma geçmişiniz yok.</p>';
+          listDiv.innerHTML = '<p style="text-align:center;color:#aaa;font-size:13px;">Henüz bir mesajlaşma geçmişiniz yok.</p>';
           return;
         }
 
         let odaSayisi = 0;
         Object.keys(data).forEach(odaId => {
-          // Eğer odaID içinde benim benzersiz kullanıcı ID'm geçiyorsa bu sohbet beni ilgilendiriyor demektir
           if (odaId.includes(currentUser.uid)) {
             odaSayisi++;
-            const mesajlar dizisi = Object.values(data[odaId]);
-            const sonMesaj = mesajlar dizisi[mesajlar dizisi.length - 1];
+            const mesajlar_dizisi = Object.values(data[odaId]);
+            const sonMesaj = mesajlar_dizisi[mesajlar_dizisi.length - 1];
             
-            // Karşı tarafın ID'sini bulma
-            const idParçalari = odaId.split('_');
-            const karsiId = idParçalari[0] === currentUser.uid ? idParçalari[1] : idParçalari[0];
+            const idParcalari = odaId.split('_');
+            const karsiId = idParcalari[0] === currentUser.uid ? idParcalari[1] : idParcalari[0];
             
-            // Bilgileri toplama
             const karsiIsim = sonMesaj.gonderenId === currentUser.uid ? "Müşteri / Satıcı" : sonMesaj.gonderenIsim;
             const urunBilgisi = sonMesaj.urunAdı || "Ürün Detayı";
 
@@ -237,7 +232,6 @@
       });
     }
 
-    // SOHBET PENCERESİNİ AÇMA
     window.openChat = function(karsiId, karsiIsim, urunAdi) {
       if(!currentUser) return alert("Mesajları görmek için giriş yapmalısınız!");
       
@@ -250,7 +244,7 @@
       const odaId = currentUser.uid < karsiId ? `${currentUser.uid}_${karsiId}` : `${karsiId}_${currentUser.uid}`;
       const chatRef = ref(db, `mesajlar/${odaId}`);
       
-      if (chatListenUnsubscribe) chatListenUnsubscribe(); // Önceki dinleyiciyi kapat
+      if (chatListenUnsubscribe) chatListenUnsubscribe();
       
       chatListenUnsubscribe = onValue(chatRef, (snapshot) => {
         const data = snapshot.val();
@@ -293,7 +287,7 @@
         mesaj: mesajText,
         gonderenId: currentUser.uid,
         gonderenIsim: currentUser.displayName || currentUser.email.split('@')[0],
-        urunAdı: aktifUrunAdı, // Hangi ürün için konuşulduğunu kaydet
+        urunAdı: aktifUrunAdı,
         timestamp: Date.now()
       };
       
@@ -302,7 +296,6 @@
       });
     }
 
-    // Panel Yönetimleri
     window.toggleMyChatsPanel = function() {
       document.getElementById('authPanel').classList.remove('show');
       document.getElementById('formPanel').classList.remove('show');
@@ -321,7 +314,6 @@
     window.filtreleProfil = function(saticiId) { aktifProfilId = saticiId; renderProducts(); window.location.hash = "urunler"; }
     window.profilFiltresiniKaldir = function() { aktifProfilId = null; renderProducts(); }
 
-    // Üyelik Modülleri
     window.handleAuth = function(event) {
       event.preventDefault();
       const email = document.getElementById('authEmail').value;
@@ -352,7 +344,6 @@
       }
     }
 
-    // Ürün Ekleme
     window.handleNewProduct = function(event) {
       event.preventDefault();
       if (!currentUser) return;
@@ -386,8 +377,7 @@
     <div class="container">
       <div class="chats-list-container">
         <h3 style="text-align: center; margin-bottom: 16px;">Mesajlarım / Gelen Kutusu</h3>
-        <div id="myChatsList">
-          </div>
+        <div id="myChatsList"></div>
       </div>
     </div>
   </div>
