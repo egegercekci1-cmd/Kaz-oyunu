@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sitebu - El Yapımı Ürünler</title>
+  <title>sitebu - El Yapımı Ürünler & Canlı Sohbet</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; }
@@ -16,8 +16,6 @@
     .add-product-toggle { background: #111; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; display: none; align-items: center; justify-content: center; }
     
     .auth-btn { background: #eee; color: #111; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; text-decoration: none; }
-    .cart-btn { position: relative; background: #FF6B35; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; display: none; }
-    .cart-badge { position: absolute; top: -8px; right: -8px; background: #111; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; display: flex; align-items: center; justify-content: center; }
     
     /* Üyelik ve Form Panelleri */
     .form-panel { background: #f4f4f4; padding: 30px 0; border-bottom: 1px solid #ddd; display: none; }
@@ -53,38 +51,36 @@
     .card p { color: #666; font-size: 14px; margin-bottom: 12px; }
     .card-footer { display: flex; justify-content: space-between; align-items: center; }
     .price { font-size: 20px; font-weight: 700; color: #FF6B35; }
-    .add-btn { background: #111; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; display: none; }
+    .chat-btn { background: #111; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: none; }
     
     .delete-product-btn { position: absolute; top: 10px; left: 10px; background: rgba(220, 53, 69, 0.9); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; display: none; }
 
-    .about, .contact { padding: 60px 0; background: #f9f9f9; }
-    .about h2, .contact h2 { font-size: 32px; text-align: center; margin-bottom: 24px; }
-    .about p { max-width: 700px; margin: 0 auto; text-align: center; color: #555; line-height: 1.6; }
-    .socials { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
-    .socials a { color: #111; text-decoration: none; font-weight: 600; }
-    footer { text-align: center; padding: 30px 0; border-top: 1px solid #eee; color: #888; }
+    /* CANLI SOHBET PENCERESİ */
+    .chat-window { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 500; border: 1px solid #eee; overflow: hidden; }
+    .chat-window.show { display: flex; }
+    .chat-header { background: #111; color: white; padding: 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; }
+    .chat-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+    .chat-messages { flex: 1; padding: 14px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 8px; }
     
-    .cart-panel { position: fixed; top: 0; right: -400px; width: 100%; max-width: 400px; height: 100vh; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: right 0.3s; z-index: 200; display: flex; flex-direction: column; }
-    .cart-panel.open { right: 0; }
-    .cart-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
-    .cart-header h3 { font-size: 20px; }
-    .close-cart { background: none; border: none; font-size: 28px; cursor: pointer; }
-    .cart-items { flex: 1; overflow-y: auto; padding: 20px; }
-    .cart-item { display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
-    .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
-    .cart-item-info { flex: 1; }
-    .cart-item-info h4 { font-size: 14px; margin-bottom: 4px; }
-    .qty-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-    .qty-controls button { width: 24px; height: 24px; border: 1px solid #ddd; background: white; cursor: pointer; }
-    .cart-footer { padding: 20px; border-top: 1px solid #eee; }
-    .total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
-    .whatsapp-btn { width: 100%; background: #25D366; }
-    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; display: none; }
-    .overlay.show { display: block; }
+    /* Mesaj Balonları */
+    .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 13px; word-break: break-word; line-height: 1.4; }
+    .msg-sender { background: #FF6B35; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+    .msg-receiver { background: #eee; color: #111; align-self: flex-start; border-bottom-left-radius: 0; }
+    .msg-name { font-size: 10px; font-weight: bold; display: block; margin-bottom: 2px; opacity: 0.8; }
+    
+    .chat-input-area { pading: 10px; border-top: 1px solid #eee; display: flex; background: white; padding: 8px; }
+    .chat-input-area input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none; }
+    .chat-send-btn { background: #FF6B35; color: white; border: none; padding: 8px 14px; margin-left: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+    .about { padding: 60px 0; background: #f9f9f9; }
+    .about h2 { font-size: 32px; text-align: center; margin-bottom: 24px; }
+    .about p { max-width: 700px; margin: 0 auto; text-align: center; color: #555; line-height: 1.6; }
+    footer { text-align: center; padding: 30px 0; border-top: 1px solid #eee; color: #888; }
     
     @media (max-width: 768px) { 
       .hero h1 { font-size: 36px; }
       .grid { grid-template-columns: 1fr; }
+      .chat-window { width: calc(100% - 40px); right: 20px; bottom: 20px; }
     }
   </style>
 
@@ -109,46 +105,34 @@
     const auth = getAuth(app);
     const productsRef = ref(db, 'urunler');
 
-    const WHATSAPP_NUMARA = "905xxxxxxxxx";
-
     let URUNLER = [];
-    let sepet = JSON.parse(localStorage.getItem('sepet')) || [];
     let currentUser = null;
-    let aktifProfilId = null; // Filtrelenen satıcının profil ID'si
+    let aktifProfilId = null; 
+    let aktifSohbetSaticiId = null; // Şu an mesajlaşılan satıcının ID'si
+    let chatListenUnsubscribe = null; // Aktif chat dinleyicisini kapatmak için
 
-    // Oturum Takibi ve Yetkilendirme
+    // Oturum Takibi
     onAuthStateChanged(auth, (user) => {
       const authBtn = document.getElementById('authBtn');
       const addToggle = document.getElementById('addProductToggle');
-      const cartBtn = document.getElementById('cartBtn');
       
       if (user) {
         currentUser = user;
         const gosterilecekIsim = user.displayName || user.email.split('@')[0];
         authBtn.textContent = "Çıkış Yap (" + gosterilecekIsim + ")";
-        
-        // Giriş yapıldıysa gizli butonları aç
         addToggle.style.display = "flex";
-        cartBtn.style.display = "block";
       } else {
         currentUser = null;
         authBtn.textContent = "Giriş Yap / Kaydol";
-        
-        // Giriş yapılmadıysa kritik butonları gizle
         addToggle.style.display = "none";
-        cartBtn.style.display = "none";
         document.getElementById('formPanel').classList.remove('show');
         document.getElementById('authPanel').classList.remove('show');
-        
-        // Sepeti temizle (Giriş yapmayan alamaz kuralı)
-        sepet = [];
-        saveCart();
-        updateCartUI();
+        closeChat();
       }
       renderProducts();
     });
 
-    // Verileri Dinamik Çekme
+    // Verileri Çekme
     onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
       URUNLER = [];
@@ -165,7 +149,6 @@
       const profileBox = document.getElementById('profileHeaderBox');
       const profileNameSpan = document.getElementById('profileName');
 
-      // Profil filtreleme aktif mi kontrol et
       let gösterilecekList = URUNLER;
       if (aktifProfilId) {
         gösterilecekList = URUNLER.filter(u => u.saticiId === aktifProfilId);
@@ -185,8 +168,9 @@
         const canDelete = currentUser && currentUser.uid === u.saticiId;
         const deleteBtnHtml = canDelete ? `<button class="delete-product-btn" style="display:block;" onclick="deleteProduct('${u.firebaseKey}')" title="Ürünü Sil">&times;</button>` : '';
         
-        // Giriş yaptıysa satın alma butonu açık, yapmadıysa kapalı
-        const addBtnHtml = currentUser ? `<button class="add-btn" style="display:block;" onclick="addToCart(${u.id})">Sepete Ekle</button>` : '';
+        // Giriş yaptıysa ve kendi ürünü DEĞİLSE mesaj atma butonunu göster
+        const isOwnProduct = currentUser && currentUser.uid === u.saticiId;
+        const chatBtnHtml = (currentUser && !isOwnProduct) ? `<button class="chat-btn" style="display:block;" onclick="openChat('${u.saticiId}', '${u.saticiIsmi}', '${u.ad}')">Satıcıya Mesaj At</button>` : '';
         
         return `
           <div class="card">
@@ -198,7 +182,7 @@
               <p>${u.aciklama}</p>
               <div class="card-footer">
                 <span class="price">${u.fiyat} TL</span>
-                ${addBtnHtml}
+                ${chatBtnHtml}
               </div>
             </div>
           </div>
@@ -206,7 +190,71 @@
       }).join('');
     }
 
-    // Profil Filtreleme Fonksiyonları
+    // CANLI SOHBET MODÜLÜ
+    window.openChat = function(saticiId, saticiIsmi, urunAdi) {
+      if(!currentUser) return alert("Mesaj göndermek için giriş yapmalısınız!");
+      
+      aktifSohbetSaticiId = saticiId;
+      document.getElementById('chatSellerName').textContent = saticiIsmi + " (" + urunAdi + ")";
+      document.getElementById('chatWindow').classList.add('show');
+      
+      // Alıcı ve satıcı ID'lerine göre ortak bir oda ID'si oluşturuyoruz (örn: uid1_uid2)
+      const odaId = currentUser.uid < saticiId ? `${currentUser.uid}_${saticiId}` : `${saticiId}_${currentUser.uid}`;
+      const chatRef = ref(db, `mesajlar/${odaId}`);
+      
+      // Mesajları anlık dinleme
+      chatListenUnsubscribe = onValue(chatRef, (snapshot) => {
+        const data = snapshot.val();
+        const msgDiv = document.getElementById('chatMessages');
+        msgDiv.innerHTML = '';
+        
+        if(data) {
+          Object.keys(data).forEach(key => {
+            const m = data[key];
+            const isMe = m.gonderenId === currentUser.uid;
+            const bubbleClass = isMe ? 'msg-sender' : 'msg-receiver';
+            
+            msgDiv.innerHTML += `
+              <div class="msg-bubble ${bubbleClass}">
+                <span class="msg-name">${m.gonderenIsim}</span>
+                ${m.mesaj}
+              </div>
+            `;
+          });
+        } else {
+          msgDiv.innerHTML = `<p style="text-align:center; font-size:12px; color:#aaa; margin-top:20px;">Sohbeti başlatmak için ilk mesajı gönderin!</p>`;
+        }
+        msgDiv.scrollTop = msgDiv.scrollHeight; // Ekranı en aşağı kaydır
+      });
+    }
+
+    window.closeChat = function() {
+      document.getElementById('chatWindow').classList.remove('show');
+      aktifSohbetSaticiId = null;
+    }
+
+    window.sendChatMessage = function(event) {
+      event.preventDefault();
+      const input = document.getElementById('chatInput');
+      const mesajText = input.value.trim();
+      if(!mesajText || !aktifSohbetSaticiId || !currentUser) return;
+      
+      const odaId = currentUser.uid < aktifSohbetSaticiId ? `${currentUser.uid}_${aktifSohbetSaticiId}` : `${aktifSohbetSaticiId}_${currentUser.uid}`;
+      const chatRef = ref(db, `mesajlar/${odaId}`);
+      
+      const yeniMesaj = {
+        mesaj: mesajText,
+        gonderenId: currentUser.uid,
+        gonderenIsim: currentUser.displayName || currentUser.email.split('@')[0],
+        timestamp: Date.now()
+      };
+      
+      push(chatRef, yeniMesaj).then(() => {
+        input.value = '';
+      });
+    }
+
+    // Profil Filtreleme
     window.filtreleProfil = function(saticiId) {
       aktifProfilId = saticiId;
       renderProducts();
@@ -234,9 +282,8 @@
         if(!name) return alert("Lütfen bir profil ismi/mağaza adı belirleyin!");
         createUserWithEmailAndPassword(auth, email, pass)
           .then((result) => {
-            // Kullanıcı adına profil ismini ata
             updateProfile(result.user, { displayName: name }).then(() => {
-              signOut(auth); // İsmin tam oturması için çıkış-giriş yaptırıyoruz
+              signOut(auth);
               alert("Kayıt başarılı! Şimdi belirlediğiniz bilgilerle giriş yapabilirsiniz.");
             });
           })
@@ -272,7 +319,7 @@
       }
     }
 
-    // Ürün Ekleme Sistemi (Korumalı)
+    // Ürün Ekleme Paneli
     window.handleNewProduct = function(event) {
       event.preventDefault();
       if (!currentUser) return alert("Ürün yüklemek için önce giriş yapmalısınız!");
@@ -310,59 +357,6 @@
       }
     }
 
-    // Sepet Mantığı
-    window.addToCart = function(id) {
-      if(!currentUser) return alert("Satın almak (sepet) için giriş yapmalısınız!");
-      const urun = URUNLER.find(u => u.id === id);
-      if(!urun) return;
-      const item = sepet.find(i => i.id === id);
-      if (item) item.adet++;
-      else sepet.push({...urun, adet: 1});
-      saveCart();
-      updateCartUI();
-    }
-
-    window.updateQty = function(id, delta) {
-      const item = sepet.find(i => i.id === id);
-      if (!item) return;
-      item.adet += delta;
-      if (item.adet <= 0) sepet = sepet.filter(i => i.id !== id);
-      saveCart();
-      updateCartUI();
-    }
-
-    function saveCart() {
-      localStorage.setItem('sepet', JSON.stringify(sepet));
-    }
-
-    window.updateCartUI = function() {
-      const count = sepet.reduce((sum, i) => sum + i.adet, 0);
-      document.getElementById('cartCount').textContent = count;
-      
-      const itemsDiv = document.getElementById('cartItems');
-      if (sepet.length === 0) {
-        itemsDiv.innerHTML = '<p style="text-align:center;color:#888;">Sepetin boş</p>';
-      } else {
-        itemsDiv.innerHTML = sepet.map(i => `
-          <div class="cart-item">
-            <img src="${i.gorsel}" alt="${i.ad}">
-            <div class="cart-item-info">
-              <h4>${i.ad}</h4>
-              <div>${i.fiyat} TL</div>
-              <div class="qty-controls">
-                <button onclick="updateQty(${i.id}, -1)">-</button>
-                <span>${i.adet}</span>
-                <button onclick="updateQty(${i.id}, 1)">+</button>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-      
-      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
-      document.getElementById('cartTotal').textContent = total + ' TL';
-    }
-
     window.toggleFormPanel = function() {
       document.getElementById('authPanel').classList.remove('show');
       document.getElementById('formPanel').classList.toggle('show');
@@ -372,24 +366,6 @@
       document.getElementById('formPanel').classList.remove('show');
       document.getElementById('authPanel').classList.toggle('show');
     }
-
-    window.toggleCart = function() {
-      document.getElementById('cartPanel').classList.toggle('open');
-      document.getElementById('overlay').classList.toggle('show');
-    }
-
-    window.whatsappOrder = function() {
-      if (sepet.length === 0) return alert('Sepetiniz boş!');
-      let msg = 'Merhaba, sitebu üzerinden şu ürünleri sipariş etmek istiyorum:%0A%0A';
-      sepet.forEach(i => {
-        msg += `- ${i.ad} (Satıcı: ${i.saticiIsmi}) x${i.adet} = ${i.fiyat * i.adet} TL%0A`;
-      });
-      const total = sepet.reduce((sum, i) => sum + i.fiyat * i.adet, 0);
-      msg += `%0AToplam: ${total} TL`;
-      window.open(`https://wa.me/${WHATSAPP_NUMARA}?text=${msg}`, '_blank');
-    }
-
-    updateCartUI();
   </script>
 </head>
 <body>
@@ -400,9 +376,6 @@
         <div class="nav-buttons">
           <button class="auth-btn" id="authBtn" onclick="toggleAuthOrSignout()">Giriş Yap / Kaydol</button>
           <button class="add-product-toggle" id="addProductToggle" onclick="toggleFormPanel()" title="Yeni Ürün Ekle">+</button>
-          <button class="cart-btn" id="cartBtn" onclick="toggleCart()">
-            Sepetim <span class="cart-badge" id="cartCount">0</span>
-          </button>
         </div>
       </div>
     </div>
@@ -457,8 +430,8 @@
 
   <section class="hero">
     <div class="container">
-      <h1>sitebu El Yapımı Ürün Dünyası</h1>
-      <p>Giriş yapın, kendi profilinizi oluşturun ve ürünlerinizi tüm dünya ile paylaşın.</p>
+      <h1>sitebu Canlı Pazar Dünyası</h1>
+      <p>Artık dış uygulamalara gerek yok! Güvenle giriş yapın, beğendiğiniz ürünün satıcısıyla anında canlı sohbet edin.</p>
       <a href="#urunler" class="btn">Mağazayı Keşfet</a>
     </div>
   </section>
@@ -477,31 +450,27 @@
     </div>
   </section>
 
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+      <span id="chatSellerName">Sohbet</span>
+      <button class="chat-close" onclick="closeChat()">&times;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <form class="chat-input-area" onsubmit="sendChatMessage(event)">
+      <input type="text" id="chatInput" placeholder="Mesajınızı yazın..." autocomplete="off">
+      <button type="submit" class="chat-send-btn">Gönder</button>
+    </form>
+  </div>
+
   <section class="about">
     <div class="container">
       <h2>sitebu Hakkında</h2>
-      <p>Merhaba! sitebu platformuna hoş geldiniz. Herkesin güvenle kayıt olup kendi profil sayfasını oluşturabildiği ortak pazar yerimiz.</p>
+      <p>Gelişmiş Firebase altyapısı sayesinde mesajlaşmalarınız, profil sayfalarınız ve ürünleriniz tamamen anlık olarak senkronize edilir.</p>
     </div>
   </section>
 
   <footer>
     <div class="container">© 2026 sitebu. Tüm hakları saklıdır.</div>
   </footer>
-
-  <div class="overlay" id="overlay" onclick="toggleCart()"></div>
-  <div class="cart-panel" id="cartPanel">
-    <div class="cart-header">
-      <h3>Sepetin</h3>
-      <button class="close-cart" onclick="toggleCart()">&times;</button>
-    </div>
-    <div class="cart-items" id="cartItems"></div>
-    <div class="cart-footer">
-      <div class="total">
-        <span>Toplam:</span>
-        <span id="cartTotal">0 TL</span>
-      </div>
-      <button class="btn whatsapp-btn" onclick="whatsappOrder()">WhatsApp ile Sipariş Ver</button>
-    </div>
-  </div>
 </body>
 </html>
