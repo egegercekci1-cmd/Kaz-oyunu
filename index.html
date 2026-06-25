@@ -36,10 +36,14 @@
     .chat-list-item-title { font-weight: bold; font-size: 14px; color: #111; }
     .chat-list-item-sub { font-size: 12px; color: #666; margin-top: 4px; }
 
-    /* Profil Başlığı */
+    /* Profil Başlığı ve Puanlama Bölümü */
     .profile-header-box { text-align: center; padding: 30px; background: #fff5f0; border-radius: 12px; margin-bottom: 30px; display: none; border: 1px dashed #FF6B35; }
     .profile-header-box h3 { font-size: 24px; color: #FF6B35; margin-bottom: 8px; }
-    .profile-header-box button { background: #111; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .profile-rating-display { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 12px; }
+    .rating-stars { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
+    .star { font-size: 24px; color: #ccc; cursor: pointer; transition: color 0.1s; }
+    .star.selected { color: #ffca08; }
+    .profile-header-box button { background: #111; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 8px; }
 
     /* Ürün Kartı Stilleri */
     .products { padding: 60px 0; }
@@ -58,15 +62,28 @@
     .delete-product-btn { position: absolute; top: 10px; left: 10px; background: rgba(220, 53, 69, 0.9); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; justify-content: center; z-index: 10; display: none; }
 
     /* CANLI SOHBET PENCERESİ */
-    .chat-window { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 500; border: 1px solid #eee; overflow: hidden; }
+    .chat-window { position: fixed; bottom: 20px; right: 20px; width: 340px; height: 420px; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 500; border: 1px solid #eee; overflow: hidden; }
     .chat-window.show { display: flex; }
     .chat-header { background: #111; color: white; padding: 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; }
     .chat-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
     .chat-messages { flex: 1; padding: 14px; overflow-y: auto; background: #f9f9f9; display: flex; flex-direction: column; gap: 8px; }
-    .msg-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 13px; word-break: break-word; line-height: 1.4; }
-    .msg-sender { background: #FF6B35; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
-    .msg-receiver { background: #eee; color: #111; align-self: flex-start; border-bottom-left-radius: 0; }
+    
+    /* Gelişmiş Mesaj Balonu ve Silme Düzeni */
+    .msg-wrapper { display: flex; flex-direction: column; width: 100%; }
+    .msg-bubble-row { display: flex; align-items: center; gap: 6px; width: 100%; }
+    .msg-wrapper.me .msg-bubble-row { justify-content: flex-end; }
+    .msg-wrapper.other .msg-bubble-row { justify-content: flex-start; }
+
+    .msg-bubble { max-width: 75%; padding: 8px 12px; border-radius: 8px; font-size: 13px; word-break: break-word; line-height: 1.4; position: relative; }
+    .msg-sender { background: #FF6B35; color: white; border-bottom-right-radius: 0; }
+    .msg-receiver { background: #eee; color: #111; border-bottom-left-radius: 0; }
     .msg-name { font-size: 10px; font-weight: bold; display: block; margin-bottom: 2px; opacity: 0.8; }
+    
+    /* Mesaj Silme Çöp Kutusu */
+    .delete-msg-btn { background: none; border: none; color: #cc2929; font-size: 14px; cursor: pointer; padding: 4px; display: none; opacity: 0.6; transition: opacity 0.2s; }
+    .delete-msg-btn:hover { opacity: 1; }
+    .msg-wrapper.me:hover .delete-msg-btn { display: inline-block; }
+
     .chat-input-area { border-top: 1px solid #eee; display: flex; background: white; padding: 8px; }
     .chat-input-area input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none; }
     .chat-send-btn { background: #FF6B35; color: white; border: none; padding: 8px 14px; margin-left: 6px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -99,8 +116,10 @@
     const auth = getAuth(app);
     const productsRef = ref(db, 'urunler');
     const allChatsRef = ref(db, 'mesajlar');
+    const ratingsRef = ref(db, 'puanlar');
 
     let URUNLER = [];
+    let SATICI_PUANLARI = {}; 
     let currentUser = null;
     let aktifProfilId = null; 
     let aktifSohbetKarşıId = null; 
@@ -132,6 +151,21 @@
       renderProducts();
     });
 
+    // Puan Durumlarını Canlı Dinleme
+    onValue(ratingsRef, (snapshot) => {
+      const data = snapshot.val();
+      SATICI_PUANLARI = {};
+      if (data) {
+        Object.keys(data).forEach(saticiId => {
+          const oylari = Object.values(data[saticiId]);
+          const toplam = oylari.reduce((acc, curr) => acc + curr, 0);
+          const ortalama = (toplam / oylari.length).toFixed(1);
+          SATICI_PUANLARI[saticiId] = { ortalama, oySayisi: oylari.length };
+        });
+      }
+      renderProducts();
+    });
+
     onValue(productsRef, (snapshot) => {
       const data = snapshot.val();
       URUNLER = [];
@@ -147,13 +181,29 @@
       const grid = document.getElementById('productGrid');
       const profileBox = document.getElementById('profileHeaderBox');
       const profileNameSpan = document.getElementById('profileName');
+      const profileRatingSpan = document.getElementById('profileRatingInfo');
+      const ratingArea = document.getElementById('ratingActionArea');
 
       let gosterilecekList = URUNLER;
       if (aktifProfilId) {
         gosterilecekList = URUNLER.filter(u => u.saticiId === aktifProfilId);
         profileBox.style.display = "block";
+        
         const bulunanUrun = URUNLER.find(u => u.saticiId === aktifProfilId);
-        profileNameSpan.textContent = bulunanUrun ? bulunanUrun.saticiIsmi : "Bilinmeyen Mağaza";
+        const saticiIsmi = bulunanUrun ? bulunanUrun.saticiIsmi : "Mağaza";
+        profileNameSpan.textContent = saticiIsmi;
+
+        // Profildeki puan görünümü
+        const puanVerisi = SATICI_PUANLARI[aktifProfilId];
+        profileRatingSpan.textContent = puanVerisi ? `⭐ ${puanVerisi.ortalama} / 5 (${puanVerVerisi.oySayisi} Oy)` : "⭐ Henüz Puan Almamış";
+
+        // Kullanıcı kendi kendini puanlayamasın
+        if (currentUser && currentUser.uid !== aktifProfilId) {
+          ratingArea.style.display = "block";
+          resetStars();
+        } else {
+          ratingArea.style.display = "none";
+        }
       } else {
         profileBox.style.display = "none";
       }
@@ -170,13 +220,15 @@
         const isOwnProduct = currentUser && currentUser.uid === u.saticiId;
         const chatBtnHtml = (currentUser && !isOwnProduct) ? `<button class="chat-btn" style="display:block;" onclick="openChat('${u.saticiId}', '${u.saticiIsmi}', '${u.ad}')">Satıcıya Mesaj At</button>` : '';
         
+        const saticiPuan = SATICI_PUANLARI[u.saticiId] ? ` (⭐ ${SATICI_PUANLARI[u.saticiId].ortalama})` : '';
+
         return `
           <div class="card">
             ${deleteBtnHtml}
             <img src="${u.gorsel}" alt="${u.ad}">
             <div class="card-body">
               <h3>${u.ad}</h3>
-              <span class="seller-info" onclick="filtreleProfil('${u.saticiId}')">Satıcı: ${u.saticiIsmi}</span>
+              <span class="seller-info" onclick="filtreleProfil('${u.saticiId}')">Satıcı: ${u.saticiIsmi}${saticiPuan}</span>
               <p>${u.aciklama}</p>
               <div class="card-footer">
                 <span class="price">${u.fiyat} TL</span>
@@ -186,6 +238,34 @@
           </div>
         `;
       }).join('');
+    }
+
+    // SATICIYA PUAN VERME FONKSİYONU
+    window.rateSeller = function(score) {
+      if (!currentUser) return alert("Puan verebilmek için giriş yapmalısınız!");
+      if (!aktifProfilId) return;
+
+      const userRatingRef = ref(db, `puanlar/${aktifProfilId}/${currentUser.uid}`);
+      set(userRatingRef, score).then(() => {
+        alert("Puanınız başarıyla kaydedildi!");
+        highlightStars(score);
+      }).catch(err => alert("Hata: " + err.message));
+    }
+
+    window.highlightStars = function(score) {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach((star, index) => {
+        if (index < score) {
+          star.classList.add('selected');
+        } else {
+          star.classList.remove('selected');
+        }
+      });
+    }
+
+    function resetStars() {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach(star => star.classList.remove('selected'));
     }
 
     function dinleMesajOdalarini() {
@@ -203,10 +283,11 @@
         let odaSayisi = 0;
         Object.keys(data).forEach(odaId => {
           if (odaId.includes(currentUser.uid)) {
-            odaSayisi++;
             const mesajlar_dizisi = Object.values(data[odaId]);
-            const sonMesaj = mesajlar_dizisi[mesajlar_dizisi.length - 1];
+            if (mesajlar_dizisi.length === 0) return;
             
+            odaSayisi++;
+            const sonMesaj = mesajlar_dizisi[mesajlar_dizisi.length - 1];
             const idParcalari = odaId.split('_');
             const karsiId = idParcalari[0] === currentUser.uid ? idParcalari[1] : idParcalari[0];
             
@@ -232,6 +313,7 @@
       });
     }
 
+    // SOHBET PENCERESİNİ AÇMA VE MESAJLARI CANLI LİSTELEME
     window.openChat = function(karsiId, karsiIsim, urunAdi) {
       if(!currentUser) return alert("Mesajları görmek için giriş yapmalısınız!");
       
@@ -252,21 +334,39 @@
         msgDiv.innerHTML = '';
         
         if(data) {
-          Object.keys(data).forEach(key => {
-            const m = data[key];
+          Object.keys(data).forEach(msgKey => {
+            const m = data[msgKey];
             const isMe = m.gonderenId === currentUser.uid;
+            const wrapperClass = isMe ? 'me' : 'other';
             const bubbleClass = isMe ? 'msg-sender' : 'msg-receiver';
             
+            // Sadece kendi gönderdiğimiz mesajların yanında silme butonu olsun
+            const deleteBtn = isMe ? `<button class="delete-msg-btn" onclick="deleteMessage('${odaId}', '${msgKey}')" title="Mesajı Sil">🗑️</button>` : '';
+            
             msgDiv.innerHTML += `
-              <div class="msg-bubble ${bubbleClass}">
-                <span class="msg-name">${m.gonderenIsim}</span>
-                ${m.mesaj}
+              <div class="msg-wrapper ${wrapperClass}">
+                <div class="msg-bubble-row">
+                  ${!isMe ? deleteBtn : ''} 
+                  <div class="msg-bubble ${bubbleClass}">
+                    <span class="msg-name">${m.gonderenIsim}</span>
+                    ${m.mesaj}
+                  </div>
+                  ${isMe ? deleteBtn : ''}
+                </div>
               </div>
             `;
           });
         }
         msgDiv.scrollTop = msgDiv.scrollHeight;
       });
+    }
+
+    // TEK BİR MESAJI SİLME FONKSİYONU
+    window.deleteMessage = function(odaId, msgKey) {
+      if (confirm("Bu mesajı silmek istediğinizden emin misiniz?")) {
+        const msgRef = ref(db, `mesajlar/${odaId}/${msgKey}`);
+        remove(msgRef).catch(err => alert("Mesaj silinemedi: " + err.message));
+      }
     }
 
     window.closeChat = function() {
@@ -433,8 +533,22 @@
     <div class="container">
       <div class="profile-header-box" id="profileHeaderBox">
         <h3 id="profileName">Satıcı Profili</h3>
+        <div class="profile-rating-display" id="profileRatingInfo">⭐ 0.0 / 5 (0 Oy)</div>
+        
+        <div id="ratingActionArea" style="display:none;">
+          <p style="font-size:13px; color:#666;">Satıcıyı Değerlendirin:</p>
+          <div class="rating-stars">
+            <span class="star" onclick="rateSeller(1)">★</span>
+            <span class="star" onclick="rateSeller(2)">★</span>
+            <span class="star" onclick="rateSeller(3)">★</span>
+            <span class="star" onclick="rateSeller(4)">★</span>
+            <span class="star" onclick="rateSeller(5)">★</span>
+          </div>
+        </div>
+
         <button onclick="profilFiltresiniKaldir()">Tüm Ürünleri Göster</button>
       </div>
+
       <h2>Ürünler</h2>
       <div class="grid" id="productGrid"></div>
     </div>
